@@ -70,7 +70,7 @@ class UpdateChecker(private val repo: String = DEFAULT_REPO) {
             ?.let { ReleaseAsset(it.name, it.downloadUrl, it.size) }
         UpdateInfo(
             version = version,
-            notes = release.body.orEmpty().trim(),
+            notes = plainText(release.body.orEmpty()),
             pageUrl = release.htmlUrl,
             apk = asset { it.endsWith(".apk") },
             desktopZip = asset { it.contains("desktop") && it.endsWith(".zip") },
@@ -109,6 +109,19 @@ class UpdateChecker(private val repo: String = DEFAULT_REPO) {
     companion object {
         const val DEFAULT_REPO = "Damir102938/Pickture"
         const val RELEASES_PAGE = "https://github.com/$DEFAULT_REPO/releases/latest"
+
+        /** Описание релиза пишется в Markdown — для диалога в приложении убираем разметку. */
+        fun plainText(markdown: String): String = markdown
+            .lines()
+            .joinToString("\n") { line ->
+                line.trim()
+                    .replace(Regex("""^#+\s*"""), "")
+                    .replace(Regex("""^[-*]\s+"""), "• ")
+                    .replace("**", "")
+                    .replace("`", "")
+            }
+            .replace(Regex("""\n{3,}"""), "\n\n")
+            .trim()
 
         /** Сравнение версий вида 1.2.3 по числам. */
         fun isNewer(candidate: String, current: String): Boolean {
