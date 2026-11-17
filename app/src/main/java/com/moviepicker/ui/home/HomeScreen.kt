@@ -51,6 +51,7 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.joinAll
 import kotlinx.coroutines.launch
+import java.time.LocalDate
 
 class HomeViewModel(private val container: AppContainer) : ViewModel() {
     val sections = FeedSection.entries
@@ -73,6 +74,9 @@ class HomeViewModel(private val container: AppContainer) : ViewModel() {
             .flatMap { (it as? LoadState.Success)?.data.orEmpty() }
             .distinctBy { it.key }
             .filter { it.key !in profile.excluded }
+            // Только действительно новое: вышло за последние полгода или ещё выйдет. В «Сериалах в эфире»
+            // бывают давние сериалы с новым сезоном — на полке «Новинки» они сбивают с толку.
+            .filter { t -> t.date?.let { !it.isBefore(LocalDate.now().minusDays(180)) } == true }
             .mapNotNull { t -> profile.matchPercent(t)?.let { t to it } }
             .filter { it.second >= 70 }
             .sortedWith(compareByDescending<Pair<Title, Int>> { it.second }.thenByDescending { it.first.popularity })
