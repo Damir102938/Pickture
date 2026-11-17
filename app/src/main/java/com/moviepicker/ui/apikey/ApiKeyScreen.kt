@@ -125,7 +125,6 @@ fun ApiKeyScreen(onSaved: () -> Unit, onBack: (() -> Unit)? = null) {
         }
         ScreenHeader(
             "Ключ TMDB",
-            kicker = "Pickture · пропуск в кинозал",
             subtitle = "Pickture берёт данные о фильмах из TMDB — крупной открытой базы кино. " +
                 "Нужен личный ключ: он бесплатный, а получить его можно за пару минут.",
         )

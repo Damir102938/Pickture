@@ -67,7 +67,7 @@ fun LibraryScreen(onOpen: (Title) -> Unit, onSettings: () -> Unit) {
     var tabIndex by rememberSaveable { mutableIntStateOf(0) }
 
     Column(Modifier.fillMaxSize().statusBarsPadding()) {
-        ScreenHeader("Мои списки", kicker = "Pickture · мои билеты") {
+        ScreenHeader("Мои списки") {
             Box(
                 Modifier.size(40.dp).clip(RoundedCornerShape(6.dp)).border(1.dp, Brand.Perforation, RoundedCornerShape(6.dp))
                     .pressClickable(onClick = onSettings),

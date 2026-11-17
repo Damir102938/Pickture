@@ -49,7 +49,7 @@ import kotlinx.coroutines.launch
 fun ScreenHeader(
     title: String,
     modifier: Modifier = Modifier,
-    kicker: String? = "Pickture · афиша",
+    kicker: String? = null,
     subtitle: String? = null,
     inset: Dp = 16.dp,
     trailing: (@Composable RowScope.() -> Unit)? = null,

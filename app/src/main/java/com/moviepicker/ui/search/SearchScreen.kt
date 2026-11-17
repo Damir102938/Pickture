@@ -121,7 +121,7 @@ fun SearchScreen(onOpen: (Title) -> Unit) {
     val marks by vm.marks.collectAsStateWithLifecycle()
 
     Column(Modifier.fillMaxSize().statusBarsPadding()) {
-        ScreenHeader("Поиск", kicker = "Pickture · касса")
+        ScreenHeader("Поиск")
         OutlinedTextField(
             value = state.query,
             onValueChange = vm::onQueryChange,

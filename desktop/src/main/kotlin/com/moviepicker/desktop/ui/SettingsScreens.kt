@@ -97,7 +97,7 @@ fun SettingsScreen(c: DesktopContainer, nav: Navigator) {
 
     Box(Modifier.fillMaxSize()) {
         Column(Modifier.fillMaxSize().verticalScroll(scroll).padding(32.dp).widthIn(max = 760.dp)) {
-            ScreenHeader("Настройки", kicker = "Pickture · будка киномеханика")
+            ScreenHeader("Настройки")
             Spacer(Modifier.height(12.dp))
             Header(1, "Ключ TMDB")
             val key = settings.tmdbApiKey
@@ -303,7 +303,6 @@ fun ApiKeyScreen(c: DesktopContainer, onSaved: () -> Unit, onBack: (() -> Unit)?
             if (onBack != null) BackButton(onBack)
             ScreenHeader(
                 "Ключ TMDB",
-                kicker = "Pickture · пропуск в кинозал",
                 subtitle = "Pickture берёт данные о фильмах из TMDB — крупной открытой базы кино. " +
                     "Нужен личный ключ: он бесплатный, а получить его можно за пару минут.",
             )
@@ -396,7 +395,6 @@ fun GenresScreen(c: DesktopContainer, firstRun: Boolean, onDone: () -> Unit) {
         Column(Modifier.widthIn(max = 760.dp).padding(40.dp)) {
             ScreenHeader(
                 "Что вы любите смотреть?",
-                kicker = "Pickture · выбор жанров",
                 subtitle = "Выберите жанры, и рекомендации появятся сразу. Дальше ставьте лайки фильмам — подборка станет точнее. " +
                     "Выбор можно изменить в настройках.",
             )

@@ -293,7 +293,7 @@ fun SearchScreen(c: DesktopContainer, nav: Navigator) {
     }
 
     Column(Modifier.fillMaxSize().padding(start = 32.dp, top = 32.dp, end = 32.dp)) {
-        ScreenHeader("Поиск", kicker = "Pickture · касса")
+        ScreenHeader("Поиск")
         Spacer(Modifier.height(8.dp))
         OutlinedTextField(
             value = SearchCache.query,
@@ -364,7 +364,7 @@ fun LibraryScreen(c: DesktopContainer, nav: Navigator) {
     val marks by c.marks.collectAsState()
 
     Column(Modifier.fillMaxSize().padding(start = 32.dp, top = 32.dp, end = 32.dp)) {
-        ScreenHeader("Мои списки", kicker = "Pickture · мои билеты")
+        ScreenHeader("Мои списки")
         Spacer(Modifier.height(12.dp))
         TicketToggle(
             options = LibraryTab.entries.map { tab ->
