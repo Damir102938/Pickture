@@ -49,6 +49,19 @@ data class UserMark(
 
 data class CastMember(val id: Int, val name: String, val character: String?, val photoPath: String?)
 
+/** Ролик с YouTube: трейлер, тизер и т. п. */
+data class Video(val key: String, val name: String, val type: String, val language: String?) {
+    val typeLabel: String
+        get() = when (type) {
+            "Trailer" -> "Трейлер"
+            "Teaser" -> "Тизер"
+            "Clip" -> "Отрывок"
+            "Featurette" -> "О съёмках"
+            "Behind the Scenes" -> "За кадром"
+            else -> "Видео"
+        }
+}
+
 data class Episode(val season: Int, val number: Int, val date: LocalDate?, val name: String?)
 
 data class TitleDetails(
@@ -61,7 +74,8 @@ data class TitleDetails(
     val status: String?,
     val cast: List<CastMember>,
     val directors: List<String>,
-    val trailerYoutubeKey: String?,
+    /** Трейлеры и тизеры, лучшие первыми (русские, официальные). */
+    val videos: List<Video>,
     val theatricalDate: LocalDate?,
     val digitalDate: LocalDate?,
     val lastEpisode: Episode?,

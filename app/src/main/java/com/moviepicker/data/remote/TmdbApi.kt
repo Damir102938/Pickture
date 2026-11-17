@@ -50,6 +50,13 @@ interface TmdbApi {
         @Query("page") page: Int = 1,
     ): PagedResponse<TitleDto>
 
+    @GET("{type}/{id}/videos")
+    suspend fun videos(
+        @Path("type") type: String,
+        @Path("id") id: Int,
+        @Query("include_video_language") videoLanguages: String = "ru,en,null",
+    ): VideosDto
+
     @GET("search/multi")
     suspend fun searchMulti(
         @Query("query") query: String,

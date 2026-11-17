@@ -44,13 +44,14 @@ class MainActivity : ComponentActivity() {
             !contentReady || SystemClock.uptimeMillis() - startedAt < SPLASH_MIN_MS
         }
         splash.setOnExitAnimationListener { provider ->
-            val icon = provider.iconView
-            icon.animate()
-                .scaleX(1.35f).scaleY(1.35f)
-                .alpha(0f)
-                .setDuration(SPLASH_EXIT_MS)
-                .setInterpolator(AccelerateInterpolator())
-                .start()
+            // Значка может не быть (например, при запуске из уведомления) — тогда просто растворяем фон
+            val icon = runCatching { provider.iconView }.getOrNull()
+            icon?.animate()
+                ?.scaleX(1.35f)?.scaleY(1.35f)
+                ?.alpha(0f)
+                ?.setDuration(SPLASH_EXIT_MS)
+                ?.setInterpolator(AccelerateInterpolator())
+                ?.start()
             provider.view.animate()
                 .alpha(0f)
                 .setStartDelay(SPLASH_EXIT_MS / 3)
@@ -102,7 +103,7 @@ class MainActivity : ComponentActivity() {
     }
 
     private companion object {
-        const val SPLASH_MIN_MS = 850L
+        const val SPLASH_MIN_MS = 1200L
         const val SPLASH_EXIT_MS = 320L
     }
 

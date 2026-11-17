@@ -49,7 +49,6 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -119,7 +118,12 @@ class DetailsViewModel(private val container: AppContainer, private val key: Tit
 }
 
 @Composable
-fun DetailsScreen(key: TitleKey, onBack: () -> Unit, onOpen: (Title) -> Unit) {
+fun DetailsScreen(
+    key: TitleKey,
+    onBack: () -> Unit,
+    onOpen: (Title) -> Unit,
+    onTrailer: (videoKey: String) -> Unit,
+) {
     val vm = appViewModel(key = "${key.type.path}:${key.id}") { DetailsViewModel(it, key) }
     val state by vm.state.collectAsStateWithLifecycle()
     val mark by vm.mark.collectAsStateWithLifecycle()
@@ -139,6 +143,7 @@ fun DetailsScreen(key: TitleKey, onBack: () -> Unit, onOpen: (Title) -> Unit) {
                 onReact = vm::react,
                 onWatchlist = vm::toggleWatchlist,
                 onOpen = onOpen,
+                onTrailer = onTrailer,
             )
         }
         IconButton(
@@ -161,9 +166,9 @@ private fun DetailsContent(
     onReact: (Reaction) -> Unit,
     onWatchlist: () -> Unit,
     onOpen: (Title) -> Unit,
+    onTrailer: (videoKey: String) -> Unit,
 ) {
     val t = details.title
-    val uriHandler = LocalUriHandler.current
 
     LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = 32.dp)) {
         item {
@@ -250,15 +255,13 @@ private fun DetailsContent(
                         onClick = onWatchlist,
                     )
                 }
-                details.trailerYoutubeKey?.let { trailerKey ->
+                details.videos.firstOrNull()?.let { trailer ->
                     Spacer(Modifier.height(16.dp))
-                    Button(
-                        onClick = { uriHandler.openUri("https://www.youtube.com/watch?v=$trailerKey") },
-                        modifier = Modifier.fillMaxWidth(),
-                    ) {
+                    Button(onClick = { onTrailer(trailer.key) }, modifier = Modifier.fillMaxWidth()) {
                         Icon(Icons.Filled.PlayArrow, null)
                         Spacer(Modifier.width(6.dp))
-                        Text("Смотреть трейлер")
+                        val more = details.videos.size - 1
+                        Text(if (more > 0) "Смотреть трейлер · ещё $more" else "Смотреть ${trailer.typeLabel.lowercase()}")
                     }
                 }
                 Spacer(Modifier.height(16.dp))

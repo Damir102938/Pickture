@@ -16,6 +16,7 @@ Android-приложение, где можно следить за новинк
 - **Уведомления** (проверка дважды в сутки): выход фильма из «Хочу посмотреть» в кино и онлайн, новый сезон сериала,
   свежие релизы с совпадением от 80%.
 - **Поиск** по фильмам и сериалам.
+- **Трейлеры прямо в приложении**: встроенный плеер YouTube без перехода в приложение YouTube; при повороте телефона видео разворачивается на весь экран, ролики можно переключать.
 - **Резервная копия**: в настройках можно сохранить оценки и списки в JSON-файл и восстановить их, в том числе прямо со стартового экрана после переустановки.
 
 ## Запуск
@@ -68,8 +69,8 @@ APK появится в `app/build/outputs/apk/release/`. Debug-сборка п�
 
 ## Стек
 
-Kotlin, Jetpack Compose (Material 3), Navigation, Room, DataStore, WorkManager, Retrofit + kotlinx.serialization, Coil.
-minSdk 26, targetSdk 34.
+Kotlin, Jetpack Compose (Material 3), Navigation, Room, DataStore, WorkManager, Retrofit + kotlinx.serialization, Coil,
+android-youtube-player (встроенный плеер YouTube), SplashScreen API. minSdk 26, compileSdk 35, targetSdk 34.
 
 ## Структура
 

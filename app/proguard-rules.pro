@@ -13,3 +13,9 @@
 # Retrofit читает generic-типы возвращаемых значений интерфейса API.
 -keepattributes Signature, InnerClasses, EnclosingMethod, *Annotation*
 -keep,allowobfuscation interface com.moviepicker.data.remote.TmdbApi
+
+# Встроенный плеер YouTube общается с WebView через @JavascriptInterface.
+-keep class com.pierfrancescosoffritti.androidyoutubeplayer.** { *; }
+-keepclassmembers class * {
+    @android.webkit.JavascriptInterface <methods>;
+}

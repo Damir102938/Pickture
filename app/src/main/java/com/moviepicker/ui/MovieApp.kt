@@ -46,6 +46,7 @@ import com.moviepicker.ui.recs.RecommendationsScreen
 import com.moviepicker.ui.search.SearchScreen
 import com.moviepicker.ui.section.SectionScreen
 import com.moviepicker.ui.settings.SettingsScreen
+import com.moviepicker.ui.trailer.TrailerScreen
 import com.moviepicker.work.Notifications
 
 private object Routes {
@@ -58,9 +59,11 @@ private object Routes {
     const val ONBOARDING_EDIT = "onboarding/edit"
     const val SECTION = "section/{name}"
     const val DETAILS = "details/{type}/{id}"
+    const val TRAILER = "trailer/{type}/{id}/{video}"
 
     fun section(s: FeedSection) = "section/${s.name}"
     fun details(key: TitleKey) = "details/${key.type.path}/${key.id}"
+    fun trailer(key: TitleKey, video: String) = "trailer/${key.type.path}/${key.id}/$video"
 }
 
 private data class BottomTab(val route: String, val label: String, val icon: ImageVector)
@@ -153,7 +156,26 @@ fun MovieApp(startWithOnboarding: Boolean, deepLink: TitleKey?, onDeepLinkHandle
             ) { entry ->
                 val type = MediaType.fromPath(entry.arguments?.getString("type")) ?: MediaType.MOVIE
                 val id = entry.arguments?.getInt("id") ?: 0
-                DetailsScreen(TitleKey(type, id), onBack = { nav.popBackStack() }, onOpen = openTitle)
+                val key = TitleKey(type, id)
+                DetailsScreen(
+                    key,
+                    onBack = { nav.popBackStack() },
+                    onOpen = openTitle,
+                    onTrailer = { video -> nav.navigate(Routes.trailer(key, video)) },
+                )
+            }
+            composable(
+                Routes.TRAILER,
+                arguments = listOf(
+                    navArgument("type") { type = NavType.StringType },
+                    navArgument("id") { type = NavType.IntType },
+                    navArgument("video") { type = NavType.StringType },
+                ),
+            ) { entry ->
+                val type = MediaType.fromPath(entry.arguments?.getString("type")) ?: MediaType.MOVIE
+                val id = entry.arguments?.getInt("id") ?: 0
+                val video = entry.arguments?.getString("video").orEmpty()
+                TrailerScreen(TitleKey(type, id), video, onBack = { nav.popBackStack() })
             }
         }
     }

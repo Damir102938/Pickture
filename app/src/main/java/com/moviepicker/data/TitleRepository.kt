@@ -7,6 +7,7 @@ import com.moviepicker.data.remote.DetailsDto
 import com.moviepicker.data.remote.EpisodeDto
 import com.moviepicker.data.remote.TitleDto
 import com.moviepicker.data.remote.TmdbApi
+import com.moviepicker.data.remote.VideoDto
 import com.moviepicker.domain.CastMember
 import com.moviepicker.domain.Episode
 import com.moviepicker.domain.Genres
@@ -16,6 +17,7 @@ import com.moviepicker.domain.Title
 import com.moviepicker.domain.TitleDetails
 import com.moviepicker.domain.TitleKey
 import com.moviepicker.domain.UserMark
+import com.moviepicker.domain.Video
 import com.moviepicker.domain.parseDate
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
@@ -131,6 +133,9 @@ class TitleRepository(
         } else null
         return dto.toDetails(key.type, overviewFallback)
     }
+
+    suspend fun videos(key: TitleKey): List<Video> =
+        api.videos(key.type.path, key.id).results.toTrailers()
 
     // ---------- Оценки ----------
 
@@ -290,14 +295,7 @@ private fun DetailsDto.toDetails(type: MediaType, overviewFallback: String?): Ti
         .mapNotNull { parseDate(it.releaseDate) }
         .minOrNull()
 
-    val trailer = videos?.results.orEmpty()
-        .filter { it.site == "YouTube" && (it.type == "Trailer" || it.type == "Teaser") }
-        .sortedWith(
-            compareByDescending<com.moviepicker.data.remote.VideoDto> { it.language == "ru" }
-                .thenByDescending { it.type == "Trailer" }
-                .thenByDescending { it.official }
-        )
-        .firstOrNull()
+    val trailers = videos?.results.orEmpty().toTrailers()
 
     val directorsCrew = credits?.crew.orEmpty().filter { it.job == "Director" }
     val cast = credits?.cast.orEmpty().sortedBy { it.order }
@@ -312,7 +310,7 @@ private fun DetailsDto.toDetails(type: MediaType, overviewFallback: String?): Ti
         status = status,
         cast = cast.take(15).map { CastMember(it.id, it.name, it.character, it.profilePath) },
         directors = if (type == MediaType.MOVIE) directorsCrew.map { it.name } else createdBy.map { it.name },
-        trailerYoutubeKey = trailer?.key,
+        videos = trailers,
         theatricalDate = earliest(2, 3) ?: title.date,
         digitalDate = earliest(4),
         lastEpisode = lastEpisodeToAir?.toEpisode(),
@@ -323,6 +321,17 @@ private fun DetailsDto.toDetails(type: MediaType, overviewFallback: String?): Ti
         directorIds = if (type == MediaType.MOVIE) directorsCrew.map { it.id } else createdBy.map { it.id },
     )
 }
+
+/** Ролики YouTube: сначала трейлеры, затем тизеры; русские и официальные — выше. */
+fun List<VideoDto>.toTrailers(): List<Video> = this
+    .filter { it.site == "YouTube" && it.key.isNotBlank() && (it.type == "Trailer" || it.type == "Teaser") }
+    .sortedWith(
+        compareByDescending<VideoDto> { it.language == "ru" }
+            .thenByDescending { it.type == "Trailer" }
+            .thenByDescending { it.official }
+    )
+    .distinctBy { it.key }
+    .map { Video(it.key, it.name, it.type, it.language) }
 
 /** Жанры тайтла в «киношном» пространстве. */
 val Title.normalizedGenres: List<Int> get() = Genres.normalize(type, genreIds)

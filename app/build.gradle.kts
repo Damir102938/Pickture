@@ -26,14 +26,14 @@ val hasReleaseKey = keystoreProps.getProperty("storeFile")?.let { rootProject.fi
 
 android {
     namespace = "com.moviepicker"
-    compileSdk = 34
+    compileSdk = 35
 
     defaultConfig {
         applicationId = "com.moviepicker"
         minSdk = 26
         targetSdk = 34
-        versionCode = 2
-        versionName = "0.2.0"
+        versionCode = 3
+        versionName = "0.3.0"
 
         buildConfigField("String", "TMDB_API_KEY", "\"${localProp("TMDB_API_KEY")}\"")
         buildConfigField(
@@ -76,6 +76,10 @@ android {
     kotlinOptions {
         jvmTarget = "17"
     }
+    lint {
+        // Правило из lifecycle 2.9 падает на Kotlin 2.0; LiveData в проекте не используется
+        disable += "NullSafeMutableLiveData"
+    }
     buildFeatures {
         compose = true
         buildConfig = true
@@ -108,4 +112,5 @@ dependencies {
     implementation(libs.okhttp.logging)
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.coil.compose)
+    implementation(libs.youtube.player)
 }
