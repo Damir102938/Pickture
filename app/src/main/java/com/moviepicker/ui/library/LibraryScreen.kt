@@ -1,5 +1,10 @@
 package com.moviepicker.ui.library
 
+import androidx.compose.material.icons.filled.Bookmark
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.ThumbDown
+import androidx.compose.ui.graphics.vector.ImageVector
+import com.moviepicker.ui.design.SectionHeader
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
@@ -26,13 +31,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.Tab
-import androidx.compose.material3.TabRow
-import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -48,10 +47,15 @@ import com.moviepicker.domain.Title
 import com.moviepicker.ui.common.MessageBox
 import com.moviepicker.ui.common.TitleGrid
 
-private enum class LibraryTab(val label: String, val empty: String, val filter: (UserTitleEntity) -> Boolean) {
-    WATCHLIST("Хочу посмотреть", "Добавляйте сюда фильмы, и мы сообщим, когда они выйдут", { it.inWatchlist }),
-    LIKED("Нравится", "Ставьте лайки — так рекомендации станут точнее", { it.reaction > 0 }),
-    DISLIKED("Не моё", "Здесь будет то, что вам не понравилось", { it.reaction < 0 }),
+private enum class LibraryTab(
+    val label: String,
+    val icon: ImageVector,
+    val empty: String,
+    val filter: (UserTitleEntity) -> Boolean,
+) {
+    WATCHLIST("Хочу посмотреть", Icons.Filled.Bookmark, "Добавляйте сюда фильмы, и мы сообщим, когда они выйдут", { it.inWatchlist }),
+    LIKED("Нравится", Icons.Filled.Favorite, "Ставьте лайки — так рекомендации станут точнее", { it.reaction > 0 }),
+    DISLIKED("Не моё", Icons.Filled.ThumbDown, "Здесь будет то, что вам не понравилось", { it.reaction < 0 }),
 }
 
 @Composable
@@ -71,11 +75,12 @@ fun LibraryScreen(onOpen: (Title) -> Unit, onSettings: () -> Unit) {
             ) { Icon(Icons.Filled.Settings, "Настройки", tint = Brand.Text, modifier = Modifier.size(20.dp)) }
         }
         Spacer(Modifier.height(10.dp))
+        // Во вкладках только значок и число — полное название списка стоит заголовком ниже
+        val counts = LibraryTab.entries.map { t -> entities.count(t.filter) }
         TicketToggle(
-            options = LibraryTab.entries.map { t ->
-                val count = entities.count(t.filter)
-                if (count > 0) "${t.label} · $count" else t.label
-            },
+            options = counts.map { if (it > 0) "$it" else "" },
+            icons = LibraryTab.entries.map { it.icon },
+            descriptions = LibraryTab.entries.mapIndexed { i, t -> if (counts[i] > 0) "${t.label}: ${counts[i]}" else t.label },
             selected = tabIndex,
             onSelect = { tabIndex = it },
             modifier = Modifier.padding(horizontal = 16.dp),
@@ -89,17 +94,20 @@ fun LibraryScreen(onOpen: (Title) -> Unit, onSettings: () -> Unit) {
             },
             label = "libraryTab",
         ) { index ->
-            val shown = remember(entities, index) {
-                LibraryTab.entries[index].let { t -> entities.filter(t.filter).map { it.toTitle() } }
-            }
+            val tab = LibraryTab.entries[index]
+            val shown = remember(entities, index) { entities.filter(tab.filter).map { it.toTitle() } }
             if (shown.isEmpty()) {
-                MessageBox("Пока пусто", LibraryTab.entries[index].empty)
+                Column {
+                    SectionHeader(tab.label, Modifier.padding(top = 12.dp))
+                    MessageBox("Пока пусто", tab.empty)
+                }
             } else {
                 TitleGrid(
                     items = shown,
                     matchOf = profile::matchPercent,
                     markOf = { marks[it] },
                     onOpen = onOpen,
+                    header = { SectionHeader(tab.label, inset = 0.dp) },
                 )
             }
         }

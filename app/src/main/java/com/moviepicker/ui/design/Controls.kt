@@ -46,6 +46,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
@@ -141,13 +143,19 @@ fun TextAction(
     }
 }
 
-/** Переключатель вариантов — полоса билета, выбранная часть «прокомпостирована» золотом. */
+/**
+ * Переключатель вариантов — полоса билета, выбранная часть «прокомпостирована» золотом.
+ * [icons] — значки перед подписями; [descriptions] — полные названия для экранного диктора,
+ * если подписи короткие (например, только число).
+ */
 @Composable
 fun TicketToggle(
     options: List<String>,
     selected: Int,
     onSelect: (Int) -> Unit,
     modifier: Modifier = Modifier,
+    icons: List<ImageVector>? = null,
+    descriptions: List<String>? = null,
 ) {
     Row(
         modifier
@@ -161,12 +169,21 @@ fun TicketToggle(
             val bg by animateColorAsState(if (active) Brand.Gold else Color.Transparent, tween(220), label = "toggleBg")
             val fg by animateColorAsState(if (active) Brand.OnGold else Brand.TextMuted, tween(220), label = "toggleFg")
             if (i > 0) VerticalPerforation(inset = 6.dp)
-            Box(
+            Row(
                 Modifier.weight(1f).fillMaxHeight().background(bg)
-                    .pressClickable(role = Role.Tab) { onSelect(i) },
-                contentAlignment = Alignment.Center,
+                    .pressClickable(role = Role.Tab) { onSelect(i) }
+                    .then(descriptions?.getOrNull(i)?.let { d -> Modifier.semantics(mergeDescendants = true) { contentDescription = d } } ?: Modifier)
+                    .padding(horizontal = 6.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Center,
             ) {
-                Text(label.uppercase(), style = PkType.label, color = fg, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                icons?.getOrNull(i)?.let {
+                    Icon(it, null, tint = fg, modifier = Modifier.size(16.dp))
+                    if (label.isNotEmpty()) Spacer(Modifier.width(6.dp))
+                }
+                if (label.isNotEmpty()) {
+                    Text(label.uppercase(), style = PkType.label, color = fg, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                }
             }
         }
     }

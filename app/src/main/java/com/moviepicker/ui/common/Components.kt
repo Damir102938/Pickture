@@ -1,5 +1,7 @@
 package com.moviepicker.ui.common
 
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -137,19 +139,26 @@ fun TitleCard(
             TicketStub(title, match)
         }
         Spacer(Modifier.height(6.dp))
-        Text(
-            title.name,
-            style = MaterialTheme.typography.bodyMedium,
-            fontWeight = FontWeight.Medium,
-            maxLines = 2,
-            overflow = TextOverflow.Ellipsis,
-        )
-        Text(
-            title.subtitle(),
-            style = MaterialTheme.typography.bodySmall,
-            color = Brand.TextMuted,
-            maxLines = 1,
-        )
+        // Подпись всегда занимает место под две строки названия и дату: иначе высота ряда
+        // скачет при прокрутке и сдвигает разделы ниже. Дата при этом идёт сразу под названием.
+        val nameStyle = MaterialTheme.typography.bodyMedium
+        val dateStyle = MaterialTheme.typography.bodySmall
+        val captionHeight = with(LocalDensity.current) { nameStyle.lineHeight.toDp() * 2 + dateStyle.lineHeight.toDp() }
+        Column(Modifier.heightIn(min = captionHeight)) {
+            Text(
+                title.name,
+                style = nameStyle,
+                fontWeight = FontWeight.Medium,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+            )
+            Text(
+                title.subtitle(),
+                style = dateStyle,
+                color = Brand.TextMuted,
+                maxLines = 1,
+            )
+        }
     }
 }
 

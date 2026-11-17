@@ -1,5 +1,8 @@
 package com.moviepicker.desktop.ui
 
+import androidx.compose.material.icons.filled.Bookmark
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.ThumbDown
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
@@ -368,6 +371,7 @@ fun LibraryScreen(c: DesktopContainer, nav: Navigator) {
                 val count = entities.count { it.matches(tab) }
                 if (count > 0) "${tab.label} · $count" else tab.label
             },
+            icons = listOf(Icons.Filled.Bookmark, Icons.Filled.Favorite, Icons.Filled.ThumbDown),
             selected = LibraryCache.tab.ordinal,
             onSelect = { LibraryCache.tab = LibraryTab.entries[it] },
             modifier = Modifier.widthIn(max = 640.dp),

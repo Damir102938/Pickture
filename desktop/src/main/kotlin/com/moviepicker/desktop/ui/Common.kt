@@ -1,5 +1,7 @@
 package com.moviepicker.desktop.ui
 
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.material3.Shapes
 import androidx.compose.ui.graphics.Shape
 import com.moviepicker.desktop.ui.design.Brand
@@ -219,11 +221,14 @@ fun TitleCard(title: Title, match: Int?, mark: UserMark?, onClick: () -> Unit, m
             }
         }
         Spacer(Modifier.height(8.dp))
-        Text(
-            title.name, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium,
-            maxLines = 2, overflow = TextOverflow.Ellipsis,
-        )
-        Text(title.subtitle(), style = MaterialTheme.typography.bodySmall, color = Brand.TextMuted)
+        // Место под две строки названия и дату — карточки в ряду одной высоты, дата сразу под названием
+        val nameStyle = MaterialTheme.typography.bodyLarge
+        val dateStyle = MaterialTheme.typography.bodySmall
+        val captionHeight = with(LocalDensity.current) { nameStyle.lineHeight.toDp() * 2 + dateStyle.lineHeight.toDp() }
+        Column(Modifier.heightIn(min = captionHeight)) {
+            Text(title.name, style = nameStyle, fontWeight = FontWeight.Medium, maxLines = 2, overflow = TextOverflow.Ellipsis)
+            Text(title.subtitle(), style = dateStyle, color = Brand.TextMuted, maxLines = 1)
+        }
     }
 }
 
