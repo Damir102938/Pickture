@@ -1,0 +1,1345 @@
+/* Pickture «Афиша»: индиго экрана + золото кинобилета. Палитра — app/.../ui/design/Palette.kt */
+
+@font-face {
+  font-family: 'Oswald';
+  font-weight: 400;
+  font-display: swap;
+  src: url('./assets/fonts/oswald_regular.ttf') format('truetype');
+}
+@font-face {
+  font-family: 'Oswald';
+  font-weight: 500;
+  font-display: swap;
+  src: url('./assets/fonts/oswald_medium.ttf') format('truetype');
+}
+@font-face {
+  font-family: 'Oswald';
+  font-weight: 600;
+  font-display: swap;
+  src: url('./assets/fonts/oswald_semibold.ttf') format('truetype');
+}
+
+:root {
+  --indigo: #5865f2;
+  --accent: #8c96ff;
+  --gold: #ffc857;
+  --on-gold: #2b2000;
+  --bg: #0f1020;
+  --ticket: #181a2c;
+  --ticket-high: #23253a;
+  --perf: #3a3d57;
+  --text: #e6e7f5;
+  --muted: #9a9cb8;
+  --match-high: #4cd08a;
+  --match-mid: #ffb547;
+  --match-low: #9a9cb8;
+  --error: #ffb4ab;
+
+  --sat: env(safe-area-inset-top, 0px);
+  --sab: env(safe-area-inset-bottom, 0px);
+  --sal: env(safe-area-inset-left, 0px);
+  --sar: env(safe-area-inset-right, 0px);
+  --tabbar: 60px;
+
+  --oswald: 'Oswald', 'Arial Narrow', sans-serif-condensed, sans-serif;
+  --system: -apple-system, BlinkMacSystemFont, 'SF Pro Text', Roboto, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+  --spring: cubic-bezier(0.34, 1.4, 0.64, 1);
+  --ios: cubic-bezier(0.32, 0.72, 0, 1);
+
+  color-scheme: dark;
+}
+
+* {
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html,
+body {
+  margin: 0;
+  height: 100%;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--system);
+  font-size: 14px;
+  line-height: 1.4;
+  overflow: hidden;
+  overscroll-behavior: none;
+  -webkit-font-smoothing: antialiased;
+  -webkit-text-size-adjust: 100%;
+}
+
+#app {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+}
+
+button,
+input,
+textarea {
+  font: inherit;
+  color: inherit;
+}
+
+button {
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+a {
+  color: var(--accent);
+}
+
+img {
+  -webkit-user-drag: none;
+  user-select: none;
+}
+
+.icon {
+  flex: none;
+  display: block;
+}
+
+/* ---------- Текст ---------- */
+
+.t-screen {
+  font: 600 24px/28px var(--oswald);
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+}
+.t-kicker {
+  font: 500 11px/14px var(--oswald);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--gold);
+}
+.t-section {
+  font: 500 15px/20px var(--oswald);
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+}
+.t-bar {
+  font: 500 18px/22px var(--oswald);
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+.t-label {
+  font: 500 13px/16px var(--oswald);
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+}
+.t-tiny {
+  font: 500 11px/13px var(--oswald);
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+}
+.t-number {
+  font: 600 13px/16px var(--oswald);
+}
+.t-body {
+  font-size: 14px;
+  line-height: 20px;
+}
+.t-small {
+  font-size: 12px;
+  line-height: 16px;
+}
+.muted {
+  color: var(--muted);
+}
+.gold {
+  color: var(--gold);
+}
+.accent {
+  color: var(--accent);
+}
+.error {
+  color: var(--error);
+}
+.clamp2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.ellipsis {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ---------- Экраны и навигация ---------- */
+
+.screen {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg);
+  overflow: hidden;
+}
+
+.scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-y: contain;
+  padding-left: var(--sal);
+  padding-right: var(--sar);
+}
+
+.scroll {
+  overflow-anchor: none;
+}
+.tab-screen .scroll {
+  padding-top: var(--sat);
+  padding-bottom: calc(var(--tabbar) + 20px + var(--sab));
+}
+
+.stack-screen .scroll {
+  padding-bottom: calc(24px + var(--sab));
+}
+
+.tab-screen[hidden] {
+  display: none;
+}
+
+.slide-left {
+  animation: slide-left 280ms ease-out;
+}
+.slide-right {
+  animation: slide-right 280ms ease-out;
+}
+@keyframes slide-right {
+  from {
+    opacity: 0;
+    transform: translateX(25%);
+  }
+}
+@keyframes slide-left {
+  from {
+    opacity: 0;
+    transform: translateX(-25%);
+  }
+}
+
+.tab-screen.enter-left {
+  animation: tab-enter-left 340ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+.tab-screen.enter-right {
+  animation: tab-enter-right 340ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+@keyframes tab-enter-right {
+  from {
+    opacity: 0;
+    transform: translateX(14%) scale(0.96);
+  }
+}
+@keyframes tab-enter-left {
+  from {
+    opacity: 0;
+    transform: translateX(-14%) scale(0.96);
+  }
+}
+
+/* Полоса под статус-баром: контент под ней приглушается, как в iOS */
+.status-scrim {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: var(--sat);
+  background: rgba(15, 16, 32, 0.82);
+  -webkit-backdrop-filter: blur(16px);
+  backdrop-filter: blur(16px);
+  z-index: 5;
+  pointer-events: none;
+}
+
+/* Вложенные экраны выезжают справа, как в iOS; нижние слегка уходят влево */
+.stack-screen {
+  z-index: 10;
+  box-shadow: -12px 0 32px rgba(0, 0, 0, 0.45);
+  transition: transform 420ms var(--ios), filter 420ms var(--ios);
+  will-change: transform;
+}
+.stack-screen.entering {
+  animation: push-in 420ms var(--ios);
+}
+.stack-screen.leaving {
+  transform: translateX(100%);
+  pointer-events: none;
+}
+.stack-screen.covered {
+  transform: translateX(-28%);
+  filter: brightness(0.6);
+}
+.stack-screen.dragging {
+  transition: none;
+}
+@keyframes push-in {
+  from {
+    transform: translateX(100%);
+  }
+}
+.tabs-layer {
+  position: absolute;
+  inset: 0;
+  transition: transform 420ms var(--ios), filter 420ms var(--ios);
+}
+.tabs-layer.covered {
+  transform: translateX(-28%);
+  filter: brightness(0.6);
+}
+.tabs-layer.dragging {
+  transition: none;
+}
+
+.top-bar {
+  flex: none;
+  padding-top: var(--sat);
+  padding-left: var(--sal);
+  padding-right: var(--sar);
+  background: var(--bg);
+  z-index: 2;
+}
+.top-bar-row {
+  height: 60px;
+  padding: 0 12px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.top-bar-row .t-bar {
+  flex: 1;
+  min-width: 0;
+}
+.top-bar .perforation {
+  margin: 0 12px;
+}
+
+/* ---------- Билет ---------- */
+
+.ticket {
+  --notch: 6px;
+  --at: 50%;
+  border-radius: 8px;
+  background: var(--ticket);
+  -webkit-mask:
+    radial-gradient(circle var(--notch) at 0 var(--at), #0000 98%, #000) left / 51% 100% no-repeat,
+    radial-gradient(circle var(--notch) at 100% var(--at), #0000 98%, #000) right / 51% 100% no-repeat;
+  mask:
+    radial-gradient(circle var(--notch) at 0 var(--at), #0000 98%, #000) left / 51% 100% no-repeat,
+    radial-gradient(circle var(--notch) at 100% var(--at), #0000 98%, #000) right / 51% 100% no-repeat;
+}
+/* Линия отрыва вертикальная: вырезы сверху и снизу */
+.ticket-v {
+  --notch: 6px;
+  --at: 50%;
+  border-radius: 8px;
+  background: var(--ticket);
+  -webkit-mask:
+    radial-gradient(circle var(--notch) at var(--at) 0, #0000 98%, #000) top / 100% 51% no-repeat,
+    radial-gradient(circle var(--notch) at var(--at) 100%, #0000 98%, #000) bottom / 100% 51% no-repeat;
+  mask:
+    radial-gradient(circle var(--notch) at var(--at) 0, #0000 98%, #000) top / 100% 51% no-repeat,
+    radial-gradient(circle var(--notch) at var(--at) 100%, #0000 98%, #000) bottom / 100% 51% no-repeat;
+}
+
+.perforation {
+  height: 1.5px;
+  flex: 1;
+  background: repeating-linear-gradient(90deg, var(--perf) 0 5px, transparent 5px 9px);
+}
+.perforation.gold {
+  background: repeating-linear-gradient(90deg, var(--gold) 0 5px, transparent 5px 9px);
+}
+.perforation-v {
+  width: 1.5px;
+  align-self: stretch;
+  margin: 8px 0;
+  background: repeating-linear-gradient(180deg, var(--perf) 0 5px, transparent 5px 9px);
+}
+
+.press {
+  transition: transform 260ms var(--spring);
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: manipulation;
+}
+.press:active {
+  transform: scale(0.96);
+  transition-duration: 90ms;
+}
+
+/* ---------- Шапки ---------- */
+
+.screen-header {
+  display: flex;
+  align-items: flex-end;
+  padding: 14px 8px 4px 16px;
+}
+.screen-header > .grow {
+  flex: 1;
+  min-width: 0;
+}
+.screen-header .subtitle {
+  margin-top: 2px;
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--muted);
+}
+
+.section-header {
+  padding: 0 16px;
+}
+.section-header.with-all {
+  padding-right: 6px;
+}
+.section-header-row {
+  height: 40px;
+  display: flex;
+  align-items: center;
+}
+.section-header-row .num {
+  color: var(--accent);
+  margin-right: 8px;
+}
+.section-header-row .t-section {
+  margin-right: 10px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 70%;
+}
+.section-header .subtitle {
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--muted);
+  margin-top: -6px;
+}
+.section-header .subtitle.indented {
+  padding-left: 25px;
+}
+
+/* ---------- Кнопки ---------- */
+
+.marquee-btn {
+  --notch: 5px;
+  min-height: 44px;
+  padding: 10px 22px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: var(--gold);
+  color: var(--on-gold);
+  border-radius: 6px;
+}
+.marquee-btn[disabled] {
+  opacity: 0.5;
+  pointer-events: none;
+}
+.marquee-btn.block {
+  display: flex;
+  width: 100%;
+}
+
+.outline-btn {
+  min-height: 40px;
+  padding: 8px 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border-radius: 6px;
+  border: 1px solid color-mix(in srgb, var(--btn-color, var(--accent)) 55%, transparent);
+  color: var(--btn-color, var(--accent));
+}
+.outline-btn[disabled] {
+  opacity: 0.5;
+  pointer-events: none;
+}
+.outline-btn.danger {
+  --btn-color: var(--error);
+}
+
+.text-action {
+  min-height: 40px;
+  padding: 8px 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border-radius: 4px;
+  color: var(--accent);
+  text-align: left;
+}
+.text-action.muted {
+  color: var(--muted);
+}
+.text-action[disabled] {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+.back-btn {
+  width: 38px;
+  height: 38px;
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  border: 1px solid var(--perf);
+  color: #fff;
+}
+.back-btn.on-image {
+  border: 0;
+  background: rgba(0, 0, 0, 0.55);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+}
+.icon-square {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  border: 1px solid var(--perf);
+  color: var(--text);
+}
+
+.toggle {
+  display: flex;
+  height: 38px;
+  border-radius: 6px;
+  border: 1px solid var(--perf);
+  overflow: hidden;
+  position: relative;
+}
+.toggle-item {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 0 6px;
+  color: var(--muted);
+  transition: color 220ms, background-color 220ms;
+}
+.toggle-item.active {
+  background: var(--gold);
+  color: var(--on-gold);
+}
+.toggle .perforation-v {
+  margin: 6px 0;
+}
+
+.seat {
+  height: 36px;
+  padding: 0 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border-radius: 4px;
+  border: 1px dashed var(--perf);
+  color: var(--muted);
+  font: 500 13px/16px var(--oswald);
+  letter-spacing: 0.4px;
+  transition: background-color 180ms, border-color 180ms;
+}
+.seat.selected {
+  border: 1.5px solid var(--accent);
+  background: rgba(88, 101, 242, 0.28);
+  color: var(--text);
+}
+.seat .icon {
+  color: var(--accent);
+}
+
+.stamp {
+  display: inline-block;
+  padding: 3px 8px;
+  border: 1.5px solid currentColor;
+  border-radius: 4px;
+  transform: rotate(var(--angle, -4deg));
+  animation: stamp-in 520ms var(--spring);
+}
+@keyframes stamp-in {
+  0% {
+    opacity: 0;
+    transform: rotate(var(--angle, -4deg)) scale(1.35);
+  }
+  25% {
+    opacity: 1;
+  }
+}
+
+.stamp-btn {
+  min-height: 60px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 8px 4px;
+  border-radius: 6px;
+  border: 1px dashed var(--perf);
+  color: var(--text);
+}
+.stamp-btn.selected {
+  border: 1.5px solid var(--sel);
+  background: color-mix(in srgb, var(--sel) 12%, transparent);
+  color: var(--sel);
+}
+.stamp-btn.selected .icon {
+  animation: punch 480ms var(--spring);
+}
+@keyframes punch {
+  from {
+    transform: scale(1.18) rotate(-6deg);
+  }
+}
+
+.stamp-icon-btn {
+  width: 38px;
+  height: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  border: 1px dashed var(--perf);
+}
+
+/* ---------- Загрузка ---------- */
+
+.marquee-loader {
+  display: inline-flex;
+  align-items: center;
+  gap: calc(var(--dot) * 0.6);
+}
+.marquee-loader span {
+  width: var(--dot);
+  height: var(--dot);
+  border-radius: 50%;
+  background: currentColor;
+  animation: marquee 800ms linear infinite;
+  opacity: 0.2;
+}
+.marquee-loader span:nth-child(2) {
+  animation-delay: 160ms;
+}
+.marquee-loader span:nth-child(3) {
+  animation-delay: 320ms;
+}
+.marquee-loader span:nth-child(4) {
+  animation-delay: 480ms;
+}
+.marquee-loader span:nth-child(5) {
+  animation-delay: 640ms;
+}
+@keyframes marquee {
+  0% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0.2;
+  }
+}
+
+.loading-box {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--gold);
+  min-height: 220px;
+}
+.loading-box.fill {
+  flex: 1;
+  min-height: 60vh;
+}
+
+.message-box {
+  padding: 32px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 10px;
+}
+.message-box .perforation {
+  flex: none;
+  width: 64px;
+}
+.message-box .marquee-btn {
+  margin-top: 8px;
+}
+
+/* ---------- Постеры и карточки ---------- */
+
+.poster {
+  position: relative;
+  background: var(--ticket-high);
+  overflow: hidden;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--perf);
+}
+.poster.ratio {
+  aspect-ratio: 2 / 3;
+}
+.poster img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0;
+  transition: opacity 240ms;
+}
+.poster img.loaded {
+  opacity: 1;
+}
+
+.mark-icon {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 24px;
+  height: 24px;
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.72);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1;
+}
+
+.title-card {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.title-card .ticket {
+  --notch: 5px;
+  --at: calc(100% - 24px);
+  border-radius: 6px;
+  overflow: hidden;
+}
+.title-card .poster {
+  border-radius: 0;
+}
+.title-card .perforation {
+  flex: none;
+  margin: 0 6px;
+}
+.title-card .stub {
+  height: 24px;
+  padding: 0 8px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.title-card .caption {
+  margin-top: 6px;
+  min-height: calc(20px * 2 + 16px);
+}
+.title-card .name {
+  font-weight: 500;
+  font-size: 14px;
+  line-height: 20px;
+}
+
+.row-scroll {
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 0 16px;
+  scroll-padding: 0 16px;
+  scroll-snap-type: x proximity;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  overscroll-behavior-x: contain;
+  overflow-anchor: none;
+}
+.row-scroll::-webkit-scrollbar {
+  display: none;
+}
+.row-scroll > * {
+  flex: none;
+  scroll-snap-align: start;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(104px, 1fr));
+  gap: 16px 12px;
+  padding: 16px;
+}
+.grid > .span {
+  grid-column: 1 / -1;
+}
+
+/* ---------- Поля ввода ---------- */
+
+.field {
+  --notch: 6px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 52px;
+  padding: 0 6px 0 14px;
+  background: var(--ticket);
+  border: 1px solid var(--perf);
+  border-radius: 8px;
+  transition: border-color 160ms;
+}
+.field:focus-within {
+  border-color: var(--gold);
+}
+.field.invalid {
+  border-color: var(--error);
+}
+.field input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  font-size: 16px; /* меньше 16px — iOS увеличивает страницу при фокусе */
+  padding: 14px 0;
+  caret-color: var(--gold);
+}
+.field input[type='search'] {
+  -webkit-appearance: none;
+  appearance: none;
+}
+.field input::-webkit-search-cancel-button,
+.field input::-webkit-search-decoration {
+  -webkit-appearance: none;
+  display: none;
+}
+.field input::placeholder {
+  color: var(--muted);
+}
+.field .icon-btn {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--muted);
+  border-radius: 6px;
+}
+
+.ticket-field {
+  border: 1px solid var(--perf);
+  border-radius: 4px;
+  padding: 4px 8px;
+}
+.ticket-field .value {
+  font-size: 14px;
+  line-height: 20px;
+  white-space: nowrap;
+}
+
+/* ---------- Нижняя навигация: билетная лента ---------- */
+
+.tabbar-wrap {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 4px calc(10px + var(--sar)) calc(8px + var(--sab)) calc(10px + var(--sal));
+  z-index: 20;
+  pointer-events: none;
+  background: linear-gradient(to top, rgba(15, 16, 32, 0.96) 55%, rgba(15, 16, 32, 0));
+  transition: transform 260ms var(--ios), opacity 200ms;
+}
+.tabbar-wrap.hidden {
+  transform: translateY(110%);
+  opacity: 0;
+}
+.tabbar {
+  --notch: 7px;
+  pointer-events: auto;
+  position: relative;
+  height: var(--tabbar);
+  display: flex;
+  border-radius: 10px;
+  background: rgba(24, 26, 44, 0.94);
+  -webkit-backdrop-filter: blur(20px);
+  backdrop-filter: blur(20px);
+}
+.tabbar .stamp-indicator {
+  position: absolute;
+  top: 7px;
+  bottom: 7px;
+  left: 0;
+  width: 25%;
+  transition: transform 520ms cubic-bezier(0.34, 1.32, 0.5, 1);
+  pointer-events: none;
+}
+.tabbar .stamp-indicator > div {
+  position: absolute;
+  inset: 0 8px;
+  border: 1.5px solid var(--gold);
+  border-radius: 5px;
+  transform: rotate(-3deg);
+}
+.tabbar .stamp-indicator.wobble-r > div {
+  animation: wobble-r 700ms;
+}
+.tabbar .stamp-indicator.wobble-l > div {
+  animation: wobble-l 700ms;
+}
+@keyframes wobble-r {
+  15% {
+    transform: rotate(6deg);
+  }
+  45% {
+    transform: rotate(-6deg);
+  }
+  70% {
+    transform: rotate(-1.5deg);
+  }
+}
+@keyframes wobble-l {
+  15% {
+    transform: rotate(-12deg);
+  }
+  45% {
+    transform: rotate(0deg);
+  }
+  70% {
+    transform: rotate(-4deg);
+  }
+}
+.tab-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  color: var(--muted);
+  transition: color 200ms;
+  position: relative;
+}
+.tab-item.active {
+  color: var(--gold);
+}
+.tab-item.active .icon {
+  animation: bounce 520ms;
+}
+@keyframes bounce {
+  20% {
+    transform: translateY(-5px);
+  }
+  50% {
+    transform: translateY(1px);
+  }
+  75% {
+    transform: translateY(-1px);
+  }
+}
+
+/* ---------- Потянуть для обновления ---------- */
+
+.ptr {
+  height: 0;
+  overflow: visible;
+  display: flex;
+  justify-content: center;
+  position: relative;
+  color: var(--gold);
+}
+.ptr > div {
+  position: absolute;
+  top: 6px;
+  transition: opacity 160ms;
+}
+
+/* ---------- Рекомендации ---------- */
+
+.rec-row {
+  --notch: 6px;
+  --at: calc(100% - 54px);
+  display: flex;
+  margin: 0 16px;
+  min-height: 138px;
+  overflow: hidden;
+  animation: fade-up 300ms ease-out both;
+  transition: opacity 260ms, transform 260ms;
+}
+.rec-row.gone {
+  opacity: 0;
+  transform: translateX(30%);
+}
+.rec-row .poster {
+  width: 92px;
+  flex: none;
+  border-radius: 0;
+  align-self: stretch;
+}
+.rec-row .body {
+  flex: 1;
+  min-width: 0;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+}
+.rec-row .name {
+  font-size: 16px;
+  line-height: 22px;
+  font-weight: 600;
+}
+.rec-row .actions {
+  margin-top: auto;
+  padding-top: 8px;
+  display: flex;
+  gap: 8px;
+}
+.rec-row .stub {
+  width: 54px;
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+}
+.rec-row .stub .big {
+  font: 600 24px/28px var(--oswald);
+}
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+
+/* ---------- Карточка фильма ---------- */
+
+.hero {
+  position: relative;
+  height: calc(240px + var(--sat));
+  flex: none;
+}
+.hero img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.hero::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to bottom, rgba(0, 0, 0, 0.35), transparent 50%, var(--bg));
+}
+.details-head {
+  display: flex;
+  gap: 14px;
+  padding: 0 16px;
+  margin-top: -60px;
+  position: relative;
+  z-index: 1;
+}
+.details-head .poster {
+  width: 108px;
+  flex: none;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+}
+.details-head .info {
+  flex: 1;
+  min-width: 0;
+  padding-top: 58px;
+}
+.details-title {
+  font: 600 22px/26px var(--oswald);
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+}
+.floating-back {
+  position: absolute;
+  top: calc(10px + var(--sat));
+  left: calc(10px + var(--sal));
+  z-index: 6;
+}
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 6px;
+  align-items: flex-start;
+}
+.release {
+  --at: 56px;
+  display: flex;
+}
+.release .stub {
+  width: 56px;
+  flex: none;
+  padding: 10px 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+}
+.release .lines {
+  flex: 1;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12px;
+  line-height: 16px;
+}
+.tagline {
+  display: flex;
+  gap: 10px;
+  font-style: italic;
+  font-weight: 500;
+}
+.tagline::before {
+  content: '';
+  width: 2px;
+  flex: none;
+  background: var(--gold);
+}
+.person {
+  width: 72px;
+  text-align: center;
+  font-size: 11px;
+  line-height: 14px;
+}
+.person .photo {
+  width: 72px;
+  height: 90px;
+  margin-bottom: 4px;
+}
+
+/* ---------- Трейлер ---------- */
+
+.player {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  background: #000;
+  flex: none;
+}
+.player iframe {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+.video-item {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  padding: 8px 16px;
+}
+.video-item .thumb {
+  width: 120px;
+  aspect-ratio: 16 / 9;
+  flex: none;
+  border-radius: 6px;
+  overflow: hidden;
+  background: var(--ticket-high);
+  position: relative;
+}
+.video-item .thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.video-item.current .thumb {
+  outline: 2px solid var(--gold);
+}
+
+/* ---------- Настройки ---------- */
+
+.settings-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 16px 8px;
+}
+.settings-divider {
+  margin: 18px 16px;
+}
+.switch-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 16px;
+  cursor: pointer;
+}
+.switch {
+  width: 51px;
+  height: 31px;
+  flex: none;
+  border-radius: 16px;
+  background: var(--ticket);
+  border: 1.5px solid var(--perf);
+  position: relative;
+  transition: background-color 200ms, border-color 200ms;
+}
+.switch::after {
+  content: '';
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--muted);
+  transition: transform 260ms var(--spring), background-color 200ms;
+}
+.switch.on {
+  background: var(--gold);
+  border-color: var(--gold);
+}
+.switch.on::after {
+  transform: translateX(20px);
+  background: var(--on-gold);
+}
+.note {
+  margin: 0 16px;
+  padding: 12px;
+  font-size: 12px;
+  line-height: 17px;
+}
+.note b {
+  color: var(--text);
+}
+
+/* ---------- Диалог и уведомления ---------- */
+
+.dialog-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  background: rgba(0, 0, 0, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  animation: fade 180ms;
+}
+.dialog {
+  --notch: 9px;
+  --at: 61px;
+  width: 100%;
+  max-width: 340px;
+  border-radius: 12px;
+  padding: 22px 20px 12px;
+  animation: dialog-in 280ms var(--spring);
+}
+.dialog .actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 4px;
+  margin-top: 14px;
+}
+@keyframes dialog-in {
+  from {
+    opacity: 0;
+    transform: scale(0.92);
+  }
+}
+@keyframes fade {
+  from {
+    opacity: 0;
+  }
+}
+
+.toast {
+  position: fixed;
+  left: 50%;
+  bottom: calc(var(--tabbar) + 24px + var(--sab));
+  transform: translateX(-50%);
+  z-index: 120;
+  width: max-content;
+  max-width: calc(100% - 32px);
+  padding: 10px 16px;
+  border-radius: 8px;
+  background: var(--ticket-high);
+  border: 1px solid var(--perf);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  animation: toast-in 260ms var(--spring);
+  font-size: 13px;
+}
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, 16px);
+  }
+}
+
+.banner {
+  margin: 8px 16px 0;
+  padding: 10px 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 12px;
+  line-height: 16px;
+  border-radius: 8px;
+}
+
+.onboarding-footer {
+  flex: none;
+  padding: 0 calc(12px + var(--sar)) calc(10px + var(--sab)) calc(12px + var(--sal));
+}
+.onboarding-footer .row {
+  display: flex;
+  align-items: center;
+  padding-top: 10px;
+}
+.selectable.selected .poster {
+  outline: 2px solid var(--gold);
+  outline-offset: -2px;
+}
+.selectable .stamp {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: rgba(0, 0, 0, 0.6);
+  color: var(--gold);
+  z-index: 1;
+}
+
+.splash {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 1ms !important;
+    transition-duration: 1ms !important;
+  }
+}
