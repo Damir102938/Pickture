@@ -29,7 +29,7 @@ export function ScreenHeader(props: {
     <div class="screen-header">
       <div class="grow">
         {props.kicker && <div class="t-kicker">{props.kicker}</div>}
-        <h1 class="t-screen" style={{ margin: 0 }}>
+        <h1 class="t-screen" style={{ margin: '0px' }}>
           {props.title}
         </h1>
         {props.subtitle && <div class="subtitle">{props.subtitle}</div>}
@@ -41,7 +41,7 @@ export function ScreenHeader(props: {
 
 export function SectionHeader(props: { title: string; number?: number; subtitle?: string; onAll?: () => void; inset?: boolean }) {
   return (
-    <div class={`section-header${props.onAll ? ' with-all' : ''}`} style={props.inset === false ? { padding: 0 } : undefined}>
+    <div class={`section-header${props.onAll ? ' with-all' : ''}`} style={props.inset === false ? { padding: '0px' } : undefined}>
       <div class="section-header-row">
         {props.number !== undefined && <span class="t-number num">{pad2(props.number)}</span>}
         <h2 class="t-section" style={{ margin: '0 10px 0 0' }}>
@@ -416,9 +416,9 @@ export function TitleGrid(props: {
           onClick={() => props.onOpen(t)}
         />
       ))}
-      <div class="span" ref={sentinel} style={{ minHeight: 1 }}>
+      <div class="span" ref={sentinel} style={{ minHeight: '1px' }}>
         {props.loadingMore && (
-          <div class="loading-box" style={{ minHeight: 60 }}>
+          <div class="loading-box" style={{ minHeight: '60px' }}>
             <MarqueeLoader />
           </div>
         )}

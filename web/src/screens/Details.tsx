@@ -64,7 +64,7 @@ export function DetailsScreen({ type, id }: { type: MediaType; id: number }) {
 
   return (
     <>
-      <div class="scroll" style={{ paddingTop: 0 }}>
+      <div class="scroll" style={{ paddingTop: '0px' }}>
         {load.state === 'loading' ? (
           <LoadingBox fill />
         ) : load.state === 'error' ? (
@@ -99,11 +99,11 @@ function DetailsContent(props: { details: TitleDetails; mark: { reaction: number
         <Poster path={t.posterPath} eager />
         <div class="info">
           {details.genres.length > 0 && (
-            <div class="t-kicker" style={{ letterSpacing: 1 }}>
+            <div class="t-kicker" style={{ letterSpacing: '1px' }}>
               {details.genres.slice(0, 3).join(' · ')}
             </div>
           )}
-          <h1 class="details-title" style={{ margin: 0 }}>
+          <h1 class="details-title" style={{ margin: '0px' }}>
             {t.name}
           </h1>
           {t.originalName && <div class="t-small muted">{t.originalName}</div>}
@@ -121,9 +121,9 @@ function DetailsContent(props: { details: TitleDetails; mark: { reaction: number
                 />
               )}
           {t.voteCount > 0 && <TicketField label="TMDB" value={`★ ${formatRating(t.rating)}`} color="var(--gold)" />}
-          {match !== null && <Stamp text={`Совпадение ${match}%`} color={matchColor(match)} style={{ marginTop: 10, marginLeft: 4 }} />}
+          {match !== null && <Stamp text={`Совпадение ${match}%`} color={matchColor(match)} style={{ marginTop: '10px', marginLeft: '4px' }} />}
         </div>
-        <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
+        <div style={{ display: 'flex', gap: '8px', marginTop: '16px' }}>
           <StampButton
             icon={mark.reaction === REACTION.LIKE ? 'favorite' : 'favoriteBorder'}
             label="Нравится"
@@ -147,7 +147,7 @@ function DetailsContent(props: { details: TitleDetails; mark: { reaction: number
           />
         </div>
         {trailer && (
-          <div style={{ marginTop: 12 }}>
+          <div style={{ marginTop: '12px' }}>
             <MarqueeButton
               block
               icon="play"
@@ -158,7 +158,7 @@ function DetailsContent(props: { details: TitleDetails; mark: { reaction: number
         )}
         <ReleaseInfo details={details} />
         {tagline && (
-          <div class="tagline t-body" style={{ marginTop: 16 }}>
+          <div class="tagline t-body" style={{ marginTop: '16px' }}>
             «{tagline}»
           </div>
         )}
@@ -168,15 +168,15 @@ function DetailsContent(props: { details: TitleDetails; mark: { reaction: number
           </p>
         )}
         {details.directors.length > 0 && (
-          <div class="t-small muted" style={{ marginTop: 10 }}>
+          <div class="t-small muted" style={{ marginTop: '10px' }}>
             {(t.type === 'movie' ? 'Режиссёр: ' : 'Создатели: ') + details.directors.join(', ')}
           </div>
         )}
       </div>
       {details.cast.length > 0 && (
-        <section style={{ paddingTop: 16 }}>
+        <section style={{ paddingTop: '16px' }}>
           <SectionHeader title="В ролях" />
-          <div class="row-scroll" style={{ gap: 10 }}>
+          <div class="row-scroll" style={{ gap: '10px' }}>
             {details.cast.map((p) => (
               <div class="person" key={p.id}>
                 <div class="poster photo">
@@ -191,7 +191,7 @@ function DetailsContent(props: { details: TitleDetails; mark: { reaction: number
         </section>
       )}
       {details.similar.length > 0 && (
-        <section style={{ paddingTop: 16 }}>
+        <section style={{ paddingTop: '16px' }}>
           <SectionHeader title="Похожее" />
           <div class="row-scroll">
             {details.similar.map((s) => (
@@ -230,7 +230,7 @@ function ReleaseInfo({ details }: { details: TitleDetails }) {
   }
   if (lines.length === 0) return null
   return (
-    <div class="release ticket-v" style={{ marginTop: 16 }}>
+    <div class="release ticket-v" style={{ marginTop: '16px' }}>
       <div class="stub">
         <Icon name="event" size={18} class="gold" />
         <span class="t-tiny muted">Релиз</span>

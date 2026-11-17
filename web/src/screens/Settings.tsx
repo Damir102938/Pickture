@@ -24,7 +24,7 @@ export function SettingsScreen() {
   return (
     <>
       <TopBar title="Настройки" />
-      <div class="scroll" style={{ paddingTop: 18 }}>
+      <div class="scroll" style={{ paddingTop: '18px' }}>
         {header('Ключ TMDB')}
         <div class="t-body" style={{ padding: '0 16px' }}>
           {key ? `Сохранён ключ ${key.slice(0, 4)}…${key.slice(-4)}` : 'Ключ не задан'}
@@ -82,7 +82,7 @@ export function SettingsScreen() {
           Сохраните оценки и списки в файл — например, в «Файлы», Telegram или на почту. Формат общий для iPhone,
           Android и ПК: копию можно перенести между устройствами.
         </div>
-        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', padding: '10px 16px 0' }}>
+        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', padding: '10px 16px 0' }}>
           <OutlineButton text="Сохранить в файл" icon="share" onClick={exportBackup} />
           <BackupImportButton label="Восстановить" outline />
         </div>
@@ -154,7 +154,7 @@ function SwitchRow(props: { title: string; description: string; checked: boolean
   return (
     <div class="switch-row" role="switch" aria-checked={props.checked} onClick={() => props.onChange(!props.checked)}>
       <div style={{ flex: 1 }}>
-        <div style={{ fontSize: 16, lineHeight: '22px' }}>{props.title}</div>
+        <div style={{ fontSize: '16px', lineHeight: '22px' }}>{props.title}</div>
         <div class="t-small muted">{props.description}</div>
       </div>
       <div class={`switch${props.checked ? ' on' : ''}`} />

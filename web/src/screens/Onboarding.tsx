@@ -119,13 +119,13 @@ export function OnboardingScreen(props: { edit: boolean; onDone: () => void }) {
     <div class="screen" style={{ position: 'absolute' }}>
       <div class="scroll" style={{ paddingTop: 'var(--sat)' }}>
         {step === 0 ? (
-          <div style={{ paddingBottom: 16 }}>
+          <div style={{ paddingBottom: '16px' }}>
             <ScreenHeader
               title="Что вы любите смотреть?"
               kicker="Шаг 1 из 2 · жанры"
               subtitle="Выберите жанры, и рекомендации появятся сразу. Выбор можно изменить или совсем отключить в настройках."
             />
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, padding: '16px 16px 0' }}>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', padding: '16px 16px 0' }}>
               {selectableGenres.map((g) => (
                 <SeatTag
                   key={g.movieId}
@@ -149,7 +149,7 @@ export function OnboardingScreen(props: { edit: boolean; onDone: () => void }) {
         ) : candidates.state === 'error' ? (
           <ErrorBox message={candidates.message} onRetry={loadCandidates} />
         ) : (
-          <div class="grid" style={{ paddingTop: 0, gap: '12px 10px' }}>
+          <div class="grid" style={{ paddingTop: '0px', gap: '12px 10px' }}>
             <div class="span" style={{ margin: '0 -16px' }}>
               <ScreenHeader
                 title="Что из этого понравилось?"
@@ -168,7 +168,7 @@ export function OnboardingScreen(props: { edit: boolean; onDone: () => void }) {
                   onClick={() => toggleTitle(t)}
                 >
                   <Poster path={t.posterPath}>{on && <Stamp text="Моё" color="var(--gold)" />}</Poster>
-                  <div class="t-small clamp2" style={{ marginTop: 4 }}>
+                  <div class="t-small clamp2" style={{ marginTop: '4px' }}>
                     {t.name}
                   </div>
                 </div>

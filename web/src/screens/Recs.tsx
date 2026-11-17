@@ -106,7 +106,7 @@ export function RecsScreen() {
                 text="Потяните вниз, чтобы обновить, или оцените ещё несколько фильмов."
               />
             ))}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }} key={tab}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }} key={tab}>
             {items.map((rec, i) => (
               <RecommendationRow
                 key={titleKey(rec.title)}
@@ -150,7 +150,7 @@ function RecommendationRow(props: {
           {titleSubtitle(t)}
           {t.voteCount >= 5 && <span class="t-number gold">{'  '}★ {formatRating(t.rating)}</span>}
         </div>
-        <div class="t-small accent clamp2" style={{ marginTop: 4 }}>
+        <div class="t-small accent clamp2" style={{ marginTop: '4px' }}>
           {props.rec.reason}
         </div>
         <div class="actions">
@@ -164,7 +164,7 @@ function RecommendationRow(props: {
         {match !== null ? (
           <div style={{ color: matchColor(match), display: 'flex', alignItems: 'flex-end' }}>
             <span class="big">{match}</span>
-            <span class="t-number" style={{ paddingBottom: 3 }}>
+            <span class="t-number" style={{ paddingBottom: '3px' }}>
               %
             </span>
           </div>

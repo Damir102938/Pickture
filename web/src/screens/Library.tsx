@@ -64,7 +64,7 @@ export function LibraryScreen() {
       />
       <div key={tab} class={tab === prev ? '' : tab > prev ? 'slide-right' : 'slide-left'}>
         {shown.length === 0 ? (
-          <div style={{ paddingTop: 12 }}>
+          <div style={{ paddingTop: '12px' }}>
             <SectionHeader title={current.label} />
             <MessageBox title="Пока пусто" text={current.empty} />
           </div>

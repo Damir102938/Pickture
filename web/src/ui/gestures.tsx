@@ -67,7 +67,7 @@ export function usePullToRefresh(scrollRef: RefObject<HTMLElement | null>, onRef
           {visible && <MarqueeLoader dot={7} />}
         </div>
       </div>
-      {refreshing && <div style={{ height: 28 }} />}
+      {refreshing && <div style={{ height: '28px' }} />}
     </>
   )
 }

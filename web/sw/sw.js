@@ -11,9 +11,20 @@ const API_TIMEOUT_MS = 8000
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
-    caches.open(SHELL_CACHE).then((cache) => cache.addAll(PRECACHE.map((url) => new Request(url, { cache: 'reload' })))),
+    (async () => {
+      const cache = await caches.open(SHELL_CACHE)
+      // Каждый файл проверяем: вместо скрипта или стиля сервер мог вернуть HTML-страницу —
+      // такую версию лучше не ставить совсем, чем поставить сломанной.
+      for (const url of PRECACHE) {
+        const response = await fetch(new Request(url, { cache: 'reload' }))
+        if (!response.ok || !looksRight(url, response)) throw new Error('Некорректный файл оболочки: ' + url)
+        await cache.put(url, response)
+      }
+      // Новая версия включается сразу: весь код приложения загружается при старте одним файлом,
+      // так что открытой странице это не мешает, а приложение предложит перезапуститься.
+      await self.skipWaiting()
+    })(),
   )
-  // Первая установка активируется сразу; обновление ждёт, пока пользователь нажмёт «Обновить».
 })
 
 self.addEventListener('activate', (event) => {
@@ -50,17 +61,40 @@ self.addEventListener('fetch', (event) => {
   }
 })
 
-/** Оболочка приложения: из кэша, а если файла там нет — из сети. Страница всегда открывается из кэша. */
+const NAVIGATION_TIMEOUT_MS = 3000
+
+/** HTML под видом скрипта или стиля — признак ошибки сервера, такое не кэшируем. */
+function looksRight(url, response) {
+  const type = response.headers.get('content-type') || ''
+  const path = new URL(url, self.location.href).pathname
+  if (/\.(js|css|ttf|png|svg|webmanifest)$/.test(path)) return !type.includes('text/html')
+  return true
+}
+
+/**
+ * Оболочка приложения. Страница — сначала из сети (не дольше 3 секунд), без сети — из кэша:
+ * так новая версия подхватывается сразу, а сломанный кэш не может «застрять».
+ * Файлы сборки (с хэшем в имени) — из кэша, а если их там нет — из сети.
+ */
 async function shell(request) {
   const cache = await caches.open(SHELL_CACHE)
   if (request.mode === 'navigate') {
-    const cached = (await cache.match('./')) || (await cache.match('./index.html'))
+    try {
+      const response = await withTimeout(fetch(request), NAVIGATION_TIMEOUT_MS)
+      if (response.ok) return response
+    } catch (error) {
+      // нет сети или слишком долго — открываем сохранённую версию
+    }
+    const cached = (await cache.match('./', { ignoreVary: true })) || (await cache.match('./index.html', { ignoreVary: true }))
     if (cached) return cached
+    return fetch(request)
   }
-  const cached = await cache.match(request, { ignoreSearch: true })
+  const cached = await cache.match(request, { ignoreSearch: true, ignoreVary: true })
   if (cached) return cached
   const response = await fetch(request)
-  if (response.ok && new URL(request.url).pathname.includes('/assets/')) cache.put(request, response.clone())
+  if (response.ok && new URL(request.url).pathname.includes('/assets/') && looksRight(request.url, response)) {
+    cache.put(request, response.clone())
+  }
   return response
 }
 
