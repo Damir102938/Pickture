@@ -1,5 +1,13 @@
 package com.moviepicker.desktop.ui
 
+import androidx.compose.foundation.lazy.itemsIndexed
+import com.moviepicker.desktop.ui.design.MarqueeLoader
+import com.moviepicker.desktop.ui.design.PicktureTopBar
+import com.moviepicker.desktop.ui.design.ScreenHeader
+import com.moviepicker.desktop.ui.design.SeatTag
+import com.moviepicker.desktop.ui.design.SectionHeader
+import com.moviepicker.desktop.ui.design.TextAction
+import com.moviepicker.desktop.ui.design.TicketOutlineButton
 import androidx.compose.foundation.VerticalScrollbar
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -92,21 +100,18 @@ fun HomeScreen(c: DesktopContainer, nav: Navigator) {
     Box(Modifier.fillMaxSize()) {
         LazyColumn(state = listState, contentPadding = PaddingValues(32.dp), verticalArrangement = Arrangement.spacedBy(28.dp)) {
             item {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Column(Modifier.weight(1f)) {
-                        Text("Что нового", style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.Bold)
-                        Text("Свежие релизы, сериалы и анонсы", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    }
-                    IconButton(onClick = ::load) { Icon(Icons.Filled.Refresh, "Обновить") }
+                ScreenHeader("Что нового", subtitle = "Свежие релизы, сериалы и анонсы") {
+                    TicketOutlineButton("Обновить", ::load, icon = Icons.Filled.Refresh)
                 }
             }
+            val offset = if (forYou.isNotEmpty()) 1 else 0
             if (forYou.isNotEmpty()) item {
-                FeedRow("Новинки для вас", "Свежее, что совпадает с вашим вкусом", LoadState.Success(forYou), onAll = null, onRetry = {}) { t, m ->
+                FeedRow(1, "Новинки для вас", "Свежее, что совпадает с вашим вкусом", LoadState.Success(forYou), onAll = null, onRetry = {}) { t, m ->
                     TitleCard(t, profile.matchPercent(t), marks[t.key], onClick = { nav.openTitle(t) }, modifier = m)
                 }
             }
-            items(FeedSection.entries, key = { it.name }) { section ->
-                FeedRow(section.title, section.subtitle, rows[section] ?: LoadState.Loading,
+            itemsIndexed(FeedSection.entries, key = { _, s -> s.name }) { index, section ->
+                FeedRow(index + 1 + offset, section.title, section.subtitle, rows[section] ?: LoadState.Loading,
                     onAll = { nav.open(Screen.Section(section)) }, onRetry = ::load) { t, m ->
                     TitleCard(t, profile.matchPercent(t), marks[t.key], onClick = { nav.openTitle(t) }, modifier = m)
                 }
@@ -118,6 +123,7 @@ fun HomeScreen(c: DesktopContainer, nav: Navigator) {
 
 @Composable
 private fun FeedRow(
+    number: Int,
     title: String,
     subtitle: String,
     state: LoadState<List<Title>>,
@@ -126,19 +132,13 @@ private fun FeedRow(
     card: @Composable (Title, Modifier) -> Unit,
 ) {
     Column {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Column(Modifier.weight(1f)) {
-                Text(title, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold)
-                Text(subtitle, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            }
-            if (onAll != null) TextButton(onClick = onAll) { Text("Все") }
-        }
-        Spacer(Modifier.height(12.dp))
+        SectionHeader(title, number = number, subtitle = subtitle, onAll = onAll)
+        Spacer(Modifier.height(8.dp))
         when (state) {
             LoadState.Loading -> LoadingBox(height = 280.dp)
             is LoadState.Error -> Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(state.message, color = MaterialTheme.colorScheme.error, modifier = Modifier.weight(1f))
-                TextButton(onClick = onRetry) { Text("Повторить") }
+                TextAction("Повторить", onRetry)
             }
             is LoadState.Success ->
                 if (state.data.isEmpty()) Text("Пока ничего нет", color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -194,16 +194,10 @@ fun SectionScreen(c: DesktopContainer, nav: Navigator, section: FeedSection) {
     LaunchedEffect(nearEnd, items.size) { if (nearEnd) loadMore() }
 
     Column(Modifier.fillMaxSize()) {
-        Row(Modifier.padding(start = 16.dp, top = 16.dp, end = 32.dp), verticalAlignment = Alignment.CenterVertically) {
-            IconButton(onClick = nav::back) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Назад") }
-            Text(section.title, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
-            Spacer(Modifier.weight(1f))
+        PicktureTopBar(section.title, onBack = nav::back, modifier = Modifier.padding(start = 20.dp, end = 32.dp, top = 12.dp)) {
             SortMode.entries.forEach { mode ->
                 if (mode == SortMode.MATCH && profile.isEmpty) return@forEach
-                FilterChip(
-                    selected = sort == mode, onClick = { sort = mode }, label = { Text(mode.label) },
-                    modifier = Modifier.padding(start = 8.dp),
-                )
+                SeatTag(mode.label, selected = sort == mode, onClick = { sort = mode }, modifier = Modifier.padding(start = 8.dp))
             }
         }
         when {
@@ -211,7 +205,7 @@ fun SectionScreen(c: DesktopContainer, nav: Navigator, section: FeedSection) {
             items.isEmpty() && loading -> LoadingBox()
             else -> Box(Modifier.fillMaxSize()) {
                 LazyVerticalGrid(
-                    columns = GridCells.Adaptive(168.dp),
+                    columns = GridCells.Adaptive(164.dp),
                     state = gridState,
                     contentPadding = PaddingValues(32.dp),
                     horizontalArrangement = Arrangement.spacedBy(16.dp),
@@ -222,7 +216,7 @@ fun SectionScreen(c: DesktopContainer, nav: Navigator, section: FeedSection) {
                     }
                     if (loading) item(span = { GridItemSpan(maxLineSpan) }) {
                         Box(Modifier.fillMaxWidth().padding(16.dp), contentAlignment = Alignment.Center) {
-                            CircularProgressIndicator(Modifier.width(32.dp))
+                            MarqueeLoader()
                         }
                     }
                 }

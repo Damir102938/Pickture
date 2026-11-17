@@ -1,5 +1,25 @@
 package com.moviepicker.desktop.ui
 
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.ContentTransform
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
+import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.background
+import androidx.compose.ui.draw.clip
+import com.moviepicker.desktop.ui.design.Brand
+import com.moviepicker.desktop.ui.design.NavEntry
+import com.moviepicker.desktop.ui.design.PkType
+import com.moviepicker.desktop.ui.design.TextAction
+import com.moviepicker.desktop.ui.design.TicketRail
+import com.moviepicker.desktop.ui.design.TicketShape
+import com.moviepicker.desktop.ui.design.picktureTypography
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -79,9 +99,11 @@ private val tabs = listOf(
     Tab(Screen.Settings, "Настройки", Icons.Filled.Settings),
 )
 
+private val navEntries = tabs.map { NavEntry(it.label, it.icon) }
+
 @Composable
 fun PicktureApp(c: DesktopContainer) {
-    MaterialTheme(colorScheme = PicktureColors) {
+    MaterialTheme(colorScheme = PicktureColors, typography = picktureTypography(), shapes = PicktureShapes) {
         Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
             val hasKey by c.hasApiKey.collectAsState()
             val settings by c.settings.settings.collectAsState(initial = null)
@@ -96,6 +118,9 @@ fun PicktureApp(c: DesktopContainer) {
     }
 }
 
+/** Ключ для анимации переходов: экран и глубина стека (чтобы отличать «вперёд» от «назад»). */
+private data class Frame(val screen: Screen, val depth: Int)
+
 @Composable
 private fun MainLayout(c: DesktopContainer) {
     val nav = remember { Navigator() }
@@ -105,63 +130,85 @@ private fun MainLayout(c: DesktopContainer) {
     }
 
     Row(Modifier.fillMaxSize()) {
-        NavigationRail(
-            containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
-            modifier = Modifier.fillMaxHeight(),
-            header = {
-                Text(
-                    "Pickture",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.padding(vertical = 16.dp),
-                )
-            },
-        ) {
-            val root = nav.stack.first()
-            tabs.forEach { tab ->
-                NavigationRailItem(
-                    selected = root == tab.screen,
-                    onClick = { nav.root(tab.screen) },
-                    icon = { Icon(tab.icon, null) },
-                    label = { Text(tab.label) },
-                )
-            }
-        }
+        val root = nav.stack.first()
+        TicketRail(
+            items = navEntries,
+            selected = tabs.indexOfFirst { it.screen == root },
+            onSelect = { nav.root(tabs[it].screen) },
+        )
         Column(Modifier.fillMaxSize()) {
             update?.let { info ->
                 UpdateBanner(info, onClose = { update = null })
             }
-            Box(Modifier.fillMaxSize()) {
-                when (val screen = nav.current) {
-                    Screen.Home -> HomeScreen(c, nav)
-                    Screen.Recs -> RecsScreen(c, nav)
-                    Screen.Search -> SearchScreen(c, nav)
-                    Screen.Library -> LibraryScreen(c, nav)
-                    Screen.Settings -> SettingsScreen(c, nav)
-                    Screen.ApiKey -> ApiKeyScreen(c, onSaved = nav::back, onBack = nav::back)
-                    Screen.Genres -> GenresScreen(c, firstRun = false, onDone = nav::back)
-                    is Screen.Section -> SectionScreen(c, nav, screen.section)
-                    is Screen.Details -> DetailsScreen(c, nav, screen.key)
+            AnimatedContent(
+                targetState = Frame(nav.current, nav.stack.size),
+                transitionSpec = { frameTransition(initialState, targetState) },
+                contentKey = { it.screen to it.depth },
+                modifier = Modifier.fillMaxSize(),
+                label = "screens",
+            ) { frame ->
+                Box(Modifier.fillMaxSize()) {
+                    when (val screen = frame.screen) {
+                        Screen.Home -> HomeScreen(c, nav)
+                        Screen.Recs -> RecsScreen(c, nav)
+                        Screen.Search -> SearchScreen(c, nav)
+                        Screen.Library -> LibraryScreen(c, nav)
+                        Screen.Settings -> SettingsScreen(c, nav)
+                        Screen.ApiKey -> ApiKeyScreen(c, onSaved = nav::back, onBack = nav::back)
+                        Screen.Genres -> GenresScreen(c, firstRun = false, onDone = nav::back)
+                        is Screen.Section -> SectionScreen(c, nav, screen.section)
+                        is Screen.Details -> DetailsScreen(c, nav, screen.key)
+                    }
                 }
             }
         }
     }
 }
 
+/**
+ * Вкладки «перематываются» вверх-вниз, как плёнка, — в ту сторону, где стоит вкладка в боковой ленте;
+ * вложенные экраны выезжают снизу, как билет из кассы, и уезжают вниз при возврате.
+ */
+private fun frameTransition(from: Frame, to: Frame): ContentTransform {
+    val easing = FastOutSlowInEasing
+    val fromTab = tabs.indexOfFirst { it.screen == from.screen }
+    val toTab = tabs.indexOfFirst { it.screen == to.screen }
+    return when {
+        from.depth == 1 && to.depth == 1 && fromTab >= 0 && toTab >= 0 -> {
+            val dir = if (toTab > fromTab) 1 else -1
+            (slideInVertically(tween(360, easing = easing)) { it * dir / 5 } + fadeIn(tween(280, delayMillis = 40)) +
+                scaleIn(tween(360, easing = easing), initialScale = 0.96f)) togetherWith
+                (slideOutVertically(tween(360, easing = easing)) { -it * dir / 5 } + fadeOut(tween(200)) +
+                    scaleOut(tween(360, easing = easing), targetScale = 0.96f))
+        }
+        to.depth > from.depth ->
+            (slideInVertically(tween(320, easing = easing)) { it / 10 } + fadeIn(tween(260))) togetherWith
+                (fadeOut(tween(200)) + scaleOut(tween(300, easing = easing), targetScale = 0.97f))
+        else ->
+            (fadeIn(tween(260)) + scaleIn(tween(300, easing = easing), initialScale = 0.97f)) togetherWith
+                (slideOutVertically(tween(280, easing = easing)) { it / 10 } + fadeOut(tween(220)))
+    }
+}
+
 @Composable
 private fun UpdateBanner(info: UpdateInfo, onClose: () -> Unit) {
-    Surface(color = MaterialTheme.colorScheme.primaryContainer, modifier = Modifier.fillMaxWidth()) {
-        Row(Modifier.padding(horizontal = 20.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-            Text(
-                "Доступна новая версия Pickture ${info.version} (у вас ${BuildInfo.VERSION})",
-                color = MaterialTheme.colorScheme.onPrimaryContainer,
-                modifier = Modifier.weight(1f),
-            )
-            TextButton(onClick = { openUrl(info.desktopZip?.url ?: info.pageUrl) }) { Text("Скачать") }
-            TextButton(onClick = { openUrl(info.pageUrl) }) { Text("Что нового") }
-            Spacer(Modifier.width(4.dp))
-            TextButton(onClick = onClose) { Text("Позже") }
-        }
+    Row(
+        Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, top = 10.dp)
+            .clip(TicketShape(notchRadius = 6.dp, cornerRadius = 8.dp))
+            .background(Brand.Ticket)
+            .padding(horizontal = 20.dp, vertical = 6.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text("НОВАЯ ВЕРСИЯ", style = PkType.label, color = Brand.Gold)
+        Spacer(Modifier.width(12.dp))
+        Text(
+            "Доступна Pickture ${info.version} (у вас ${BuildInfo.VERSION})",
+            color = Brand.Text,
+            modifier = Modifier.weight(1f),
+        )
+        TextAction("Скачать", { openUrl(info.desktopZip?.url ?: info.pageUrl) }, color = Brand.Gold)
+        TextAction("Что нового", { openUrl(info.pageUrl) })
+        Spacer(Modifier.width(4.dp))
+        TextAction("Позже", onClose, color = Brand.TextMuted)
     }
 }

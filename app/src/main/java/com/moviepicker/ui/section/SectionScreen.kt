@@ -1,5 +1,9 @@
 package com.moviepicker.ui.section
 
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.statusBarsPadding
+import com.moviepicker.ui.design.PicktureTopBar
+import com.moviepicker.ui.design.SeatTag
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -76,7 +80,6 @@ class SectionViewModel(private val container: AppContainer, val section: FeedSec
     fun setSort(mode: SortMode) = _state.update { it.copy(sort = mode) }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SectionScreen(section: FeedSection, onBack: () -> Unit, onOpen: (Title) -> Unit) {
     val vm = appViewModel(key = section.name) { SectionViewModel(it, section) }
@@ -93,13 +96,8 @@ fun SectionScreen(section: FeedSection, onBack: () -> Unit, onOpen: (Title) -> U
         }
     }
 
-    Column(Modifier.fillMaxSize()) {
-        TopAppBar(
-            title = { Text(section.title) },
-            navigationIcon = {
-                IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Назад") }
-            },
-        )
+    Column(Modifier.fillMaxSize().statusBarsPadding()) {
+        PicktureTopBar(section.title, onBack = onBack)
         when {
             state.items.isEmpty() && state.error != null -> ErrorBox(state.error!!, onRetry = vm::loadMore)
             state.items.isEmpty() && state.loading -> LoadingBox()
@@ -112,15 +110,10 @@ fun SectionScreen(section: FeedSection, onBack: () -> Unit, onOpen: (Title) -> U
                 canLoadMore = state.hasMore && state.error == null,
                 onLoadMore = vm::loadMore,
                 header = {
-                    Row {
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         SortMode.entries.forEach { mode ->
                             if (mode == SortMode.MATCH && profile.isEmpty) return@forEach
-                            FilterChip(
-                                selected = state.sort == mode,
-                                onClick = { vm.setSort(mode) },
-                                label = { Text(mode.label) },
-                                modifier = Modifier.padding(end = 8.dp),
-                            )
+                            SeatTag(mode.label, selected = state.sort == mode, onClick = { vm.setSort(mode) })
                         }
                     }
                 },

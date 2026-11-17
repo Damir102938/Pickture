@@ -1,7 +1,12 @@
 package com.moviepicker.ui.recs
 
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.IntrinsicSize
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -10,7 +15,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
@@ -18,15 +22,9 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.BookmarkBorder
 import androidx.compose.material.icons.filled.FavoriteBorder
-import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.outlined.ThumbDown
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.SegmentedButton
-import androidx.compose.material3.SegmentedButtonDefaults
-import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Text
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -58,7 +56,14 @@ import com.moviepicker.ui.common.appViewModel
 import com.moviepicker.ui.common.matchColor
 import com.moviepicker.ui.common.subtitle
 import com.moviepicker.ui.common.userMessage
-import com.moviepicker.ui.theme.Gold
+import com.moviepicker.ui.design.Brand
+import com.moviepicker.ui.design.PkType
+import com.moviepicker.ui.design.ScreenHeader
+import com.moviepicker.ui.design.StampIconButton
+import com.moviepicker.ui.design.TicketShape
+import com.moviepicker.ui.design.TicketToggle
+import com.moviepicker.ui.design.VerticalPerforation
+import com.moviepicker.ui.design.pressClickable
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
@@ -123,29 +128,29 @@ fun RecommendationsScreen(onOpen: (Title) -> Unit, onSetupTaste: () -> Unit) {
             is LoadState.Error -> ErrorBox(s.message, onRetry = { vm.load(true) })
             is LoadState.Success -> {
                 val items = s.data.filter { it.title.key !in hidden && it.title.type == tab }
-                LazyColumn(contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                LazyColumn(
+                    contentPadding = PaddingValues(bottom = 16.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
                     item {
                         Column {
-                            Text("Для вас", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
-                            Text(
-                                "Подборка на основе ваших оценок. Оценивайте прямо здесь — список будет точнее.",
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            ScreenHeader(
+                                "Для вас",
+                                subtitle = "Подборка по вашим оценкам. Оценивайте прямо здесь — список станет точнее.",
                             )
-                            Spacer(Modifier.height(12.dp))
+                            Spacer(Modifier.height(8.dp))
                             // Фильмы и сериалы — отдельными вкладками, чтобы не путались
-                            SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
-                                MediaType.entries.forEachIndexed { index, type ->
+                            val types = MediaType.entries
+                            TicketToggle(
+                                options = types.map { type ->
                                     val count = s.data.count { it.title.type == type && it.title.key !in hidden }
-                                    SegmentedButton(
-                                        selected = tab == type,
-                                        onClick = { tab = type },
-                                        shape = SegmentedButtonDefaults.itemShape(index, MediaType.entries.size),
-                                    ) {
-                                        Text(if (type == MediaType.MOVIE) "Фильмы · $count" else "Сериалы · $count")
-                                    }
-                                }
-                            }
+                                    (if (type == MediaType.MOVIE) "Фильмы · " else "Сериалы · ") + count
+                                },
+                                selected = types.indexOf(tab),
+                                onSelect = { tab = types[it] },
+                                modifier = Modifier.padding(horizontal = 16.dp),
+                            )
+                            Spacer(Modifier.height(4.dp))
                         }
                     }
                     if (items.isEmpty()) {
@@ -172,6 +177,7 @@ fun RecommendationsScreen(onOpen: (Title) -> Unit, onSetupTaste: () -> Unit) {
                             onLike = { vm.react(rec.title, Reaction.LIKE) },
                             onDislike = { vm.react(rec.title, Reaction.DISLIKE) },
                             onWatchlist = { vm.addToWatchlist(rec.title) },
+                            modifier = Modifier.animateItem().padding(horizontal = 16.dp),
                         )
                     }
                 }
@@ -180,6 +186,9 @@ fun RecommendationsScreen(onOpen: (Title) -> Unit, onSetupTaste: () -> Unit) {
     }
 }
 
+private val StubWidth = 54.dp
+
+/** Рекомендация — билет: постер, описание, линия отрыва и корешок с процентом совпадения. */
 @Composable
 private fun RecommendationRow(
     rec: Recommendation,
@@ -187,41 +196,63 @@ private fun RecommendationRow(
     onLike: () -> Unit,
     onDislike: () -> Unit,
     onWatchlist: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     val t = rec.title
-    Row(Modifier.fillMaxWidth().clickable(onClick = onOpen)) {
-        Poster(t.posterPath, Modifier.width(96.dp))
-        Spacer(Modifier.width(14.dp))
-        Column(Modifier.weight(1f)) {
+    Row(
+        modifier
+            .fillMaxWidth()
+            .height(IntrinsicSize.Min)
+            .clip(TicketShape(notchRadius = 6.dp, cornerRadius = 8.dp, notchOffset = StubWidth, fromEnd = true, vertical = true))
+            .background(Brand.Ticket)
+            .pressClickable(onClick = onOpen),
+    ) {
+        Poster(
+            t.posterPath,
+            Modifier.width(92.dp).fillMaxHeight().heightIn(min = 138.dp),
+            shape = RoundedCornerShape(0.dp),
+            ratio = null,
+        )
+        Column(Modifier.weight(1f).padding(horizontal = 12.dp, vertical = 10.dp)) {
             Text(
                 t.name, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold,
                 maxLines = 2, overflow = TextOverflow.Ellipsis,
             )
-            Text(t.subtitle(), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            Spacer(Modifier.height(4.dp))
             Row(verticalAlignment = Alignment.CenterVertically) {
-                rec.matchPercent?.let {
-                    Text(
-                        "Совпадение $it%", style = MaterialTheme.typography.labelLarge,
-                        color = matchColor(it), fontWeight = FontWeight.Bold,
-                    )
-                    Spacer(Modifier.width(10.dp))
-                }
+                Text(t.subtitle(), style = MaterialTheme.typography.bodySmall, color = Brand.TextMuted)
                 if (t.voteCount >= 5) {
-                    Icon(Icons.Filled.Star, null, tint = Gold, modifier = Modifier.size(14.dp))
-                    Text(" %.1f".format(t.rating), style = MaterialTheme.typography.labelLarge)
+                    Text("  ★ %.1f".format(t.rating), style = PkType.number, color = Brand.Gold)
                 }
             }
             Spacer(Modifier.height(4.dp))
             Text(
                 rec.reason, style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.primary, maxLines = 2, overflow = TextOverflow.Ellipsis,
+                color = Brand.Accent, maxLines = 2, overflow = TextOverflow.Ellipsis,
             )
-            Row {
-                IconButton(onClick = onLike) { Icon(Icons.Filled.FavoriteBorder, "Нравится") }
-                IconButton(onClick = onDislike) { Icon(Icons.Outlined.ThumbDown, "Не моё") }
-                IconButton(onClick = onWatchlist) { Icon(Icons.Filled.BookmarkBorder, "Хочу посмотреть") }
+            Spacer(Modifier.weight(1f).heightIn(min = 8.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                StampIconButton(Icons.Filled.FavoriteBorder, "Нравится", onLike, color = Brand.Accent)
+                StampIconButton(Icons.Outlined.ThumbDown, "Не моё", onDislike)
+                StampIconButton(Icons.Filled.BookmarkBorder, "Хочу посмотреть", onWatchlist, color = Brand.Gold)
             }
+        }
+        VerticalPerforation(inset = 8.dp)
+        Column(
+            Modifier.width(StubWidth).fillMaxHeight(),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center,
+        ) {
+            val match = rec.matchPercent
+            if (match != null) {
+                Row(verticalAlignment = Alignment.Bottom) {
+                    Text("$match", style = PkType.screenTitle, color = matchColor(match))
+                    Text("%", style = PkType.number, color = matchColor(match), modifier = Modifier.padding(bottom = 3.dp))
+                }
+            } else {
+                Text("—", style = PkType.screenTitle, color = Brand.TextMuted)
+            }
+            Spacer(Modifier.height(4.dp))
+            Text("СОВП.", style = PkType.tiny, color = Brand.TextMuted)
         }
     }
 }

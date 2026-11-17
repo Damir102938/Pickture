@@ -1,20 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Знак Pickture: экран, подставка и сердце внутри -->
+<!-- Знак Pickture в стиле «Афиша»: золотой экран-билет с вырезами по бокам,
+     сердце вырезано насквозь (виден индиго-фон), золотая подставка. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="108dp"
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
     <path
-        android:pathData="M37,34H71A6,6 0,0 1,77 40V60A6,6 0,0 1,71 66H37A6,6 0,0 1,31 60V40A6,6 0,0 1,37 34Z"
-        android:strokeWidth="4.5"
-        android:strokeColor="#FFFFFFFF" />
+        android:fillColor="#FFFFC857"
+        android:fillType="evenOdd"
+        android:pathData="M37,34H71A6,6 0,0 1,77 40V46A4,4 0,0 0,77 54V60A6,6 0,0 1,71 66H37A6,6 0,0 1,31 60V54A4,4 0,0 0,31 46V40A6,6 0,0 1,37 34Z M54,58.9C44.4,51.7 43.2,45.7 48,43.3C51,42.1 53.4,43.9 54,46.3C54.6,43.9 57,42.1 60,43.3C64.8,45.7 63.6,51.7 54,58.9Z" />
     <path
         android:pathData="M45,74H63"
         android:strokeWidth="4.5"
-        android:strokeColor="#FFFFFFFF"
+        android:strokeColor="#FFFFC857"
         android:strokeLineCap="round" />
-    <path
-        android:pathData="M54,58.9C44.4,51.7 43.2,45.7 48,43.3C51,42.1 53.4,43.9 54,46.3C54.6,43.9 57,42.1 60,43.3C64.8,45.7 63.6,51.7 54,58.9Z"
-        android:fillColor="#FFFFFFFF" />
 </vector>

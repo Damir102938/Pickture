@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Сплэш: прорисовывается экран, из центра вырастает подставка, сердце появляется и дважды бьётся. -->
+<!-- Сплэш «Афиша»: золотой билет-экран опускается штампом с поворотом,
+     вырастает подставка, сердце проявляется и дважды бьётся. -->
 <animated-vector xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:aapt="http://schemas.android.com/aapt">
     <aapt:attr name="android:drawable">
@@ -8,49 +9,83 @@
             android:height="108dp"
             android:viewportWidth="108"
             android:viewportHeight="108">
-            <path
-                android:name="screen"
-                android:pathData="M54,34H71A6,6 0,0 1,77 40V60A6,6 0,0 1,71 66H37A6,6 0,0 1,31 60V40A6,6 0,0 1,37 34H54"
-                android:strokeWidth="4.5"
-                android:strokeColor="#FFFFFFFF"
-                android:strokeLineCap="round"
-                android:trimPathEnd="0" />
+            <group
+                android:name="ticket"
+                android:pivotX="54"
+                android:pivotY="50"
+                android:rotation="-14"
+                android:scaleX="1.6"
+                android:scaleY="1.6">
+                <path
+                    android:name="screen"
+                    android:fillAlpha="0"
+                    android:fillColor="#FFFFC857"
+                    android:pathData="M37,34H71A6,6 0,0 1,77 40V46A4,4 0,0 0,77 54V60A6,6 0,0 1,71 66H37A6,6 0,0 1,31 60V54A4,4 0,0 0,31 46V40A6,6 0,0 1,37 34Z" />
+                <group
+                    android:name="heart"
+                    android:pivotX="54"
+                    android:pivotY="50.5"
+                    android:scaleX="0"
+                    android:scaleY="0">
+                    <path
+                        android:fillColor="@color/splash_icon_background"
+                        android:pathData="M54,58.9C44.4,51.7 43.2,45.7 48,43.3C51,42.1 53.4,43.9 54,46.3C54.6,43.9 57,42.1 60,43.3C64.8,45.7 63.6,51.7 54,58.9Z" />
+                </group>
+            </group>
             <path
                 android:name="stand_left"
                 android:pathData="M54,74H45"
                 android:strokeWidth="4.5"
-                android:strokeColor="#FFFFFFFF"
+                android:strokeColor="#FFFFC857"
                 android:strokeLineCap="round"
                 android:trimPathEnd="0" />
             <path
                 android:name="stand_right"
                 android:pathData="M54,74H63"
                 android:strokeWidth="4.5"
-                android:strokeColor="#FFFFFFFF"
+                android:strokeColor="#FFFFC857"
                 android:strokeLineCap="round"
                 android:trimPathEnd="0" />
-            <group
-                android:name="heart"
-                android:pivotX="54"
-                android:pivotY="50.5"
-                android:scaleX="0"
-                android:scaleY="0">
-                <path
-                    android:pathData="M54,58.9C44.4,51.7 43.2,45.7 48,43.3C51,42.1 53.4,43.9 54,46.3C54.6,43.9 57,42.1 60,43.3C64.8,45.7 63.6,51.7 54,58.9Z"
-                    android:fillColor="#FFFFFFFF" />
-            </group>
         </vector>
     </aapt:attr>
 
     <target android:name="screen">
         <aapt:attr name="android:animation">
             <objectAnimator
-                android:propertyName="trimPathEnd"
-                android:duration="420"
+                android:propertyName="fillAlpha"
+                android:duration="180"
                 android:valueFrom="0"
                 android:valueTo="1"
-                android:valueType="floatType"
-                android:interpolator="@android:interpolator/fast_out_slow_in" />
+                android:valueType="floatType" />
+        </aapt:attr>
+    </target>
+
+    <!-- Удар штампа: билет падает с поворотом и пружинит -->
+    <target android:name="ticket">
+        <aapt:attr name="android:animation">
+            <set>
+                <objectAnimator
+                    android:propertyName="scaleX"
+                    android:duration="380"
+                    android:valueFrom="1.6"
+                    android:valueTo="1"
+                    android:valueType="floatType"
+                    android:interpolator="@android:interpolator/overshoot" />
+                <objectAnimator
+                    android:propertyName="scaleY"
+                    android:duration="380"
+                    android:valueFrom="1.6"
+                    android:valueTo="1"
+                    android:valueType="floatType"
+                    android:interpolator="@android:interpolator/overshoot" />
+                <objectAnimator
+                    android:propertyName="rotation"
+                    android:duration="420"
+                    android:valueFrom="-14"
+                    android:valueTo="0"
+                    android:valueType="floatType"
+                    android:interpolator="@android:interpolator/overshoot" />
+            </set>
         </aapt:attr>
     </target>
 
@@ -58,7 +93,7 @@
         <aapt:attr name="android:animation">
             <objectAnimator
                 android:propertyName="trimPathEnd"
-                android:startOffset="250"
+                android:startOffset="300"
                 android:duration="220"
                 android:valueFrom="0"
                 android:valueTo="1"
@@ -71,7 +106,7 @@
         <aapt:attr name="android:animation">
             <objectAnimator
                 android:propertyName="trimPathEnd"
-                android:startOffset="250"
+                android:startOffset="300"
                 android:duration="220"
                 android:valueFrom="0"
                 android:valueTo="1"
@@ -87,15 +122,15 @@
                 <set>
                     <objectAnimator
                         android:propertyName="scaleX"
-                        android:startOffset="380"
-                        android:duration="300"
+                        android:startOffset="400"
+                        android:duration="260"
                         android:valueFrom="0"
                         android:valueTo="1"
                         android:interpolator="@android:interpolator/overshoot" />
                     <objectAnimator
                         android:propertyName="scaleY"
-                        android:startOffset="380"
-                        android:duration="300"
+                        android:startOffset="400"
+                        android:duration="260"
                         android:valueFrom="0"
                         android:valueTo="1"
                         android:interpolator="@android:interpolator/overshoot" />

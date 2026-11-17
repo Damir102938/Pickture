@@ -1,5 +1,15 @@
 package com.moviepicker.ui.onboarding
 
+import androidx.compose.foundation.layout.offset
+import androidx.compose.ui.semantics.Role
+import com.moviepicker.ui.design.Brand
+import com.moviepicker.ui.design.MarqueeButton
+import com.moviepicker.ui.design.Perforation
+import com.moviepicker.ui.design.ScreenHeader
+import com.moviepicker.ui.design.SeatTag
+import com.moviepicker.ui.design.Stamp
+import com.moviepicker.ui.design.TextAction
+import com.moviepicker.ui.design.pressClickable
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
@@ -175,30 +185,33 @@ fun OnboardingScreen(edit: Boolean, onDone: () -> Unit) {
     Column(Modifier.fillMaxSize().statusBarsPadding().navigationBarsPadding()) {
         Box(Modifier.weight(1f)) {
             if (state.step == 0) {
-                Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp)) {
-                    Text("Что вы любите смотреть?", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
-                    Spacer(Modifier.height(8.dp))
-                    Text(
-                        "Выберите жанры, и рекомендации появятся сразу. " +
+                Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
+                    ScreenHeader(
+                        "Что вы любите смотреть?",
+                        kicker = "Шаг 1 из 2 · жанры",
+                        subtitle = "Выберите жанры, и рекомендации появятся сразу. " +
                             "Выбор можно изменить или совсем отключить в настройках.",
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
-                    Spacer(Modifier.height(20.dp))
-                    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Spacer(Modifier.height(16.dp))
+                    FlowRow(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                        modifier = Modifier.padding(horizontal = 16.dp),
+                    ) {
                         Genres.selectable.forEach { g ->
-                            FilterChip(
-                                selected = g.movieId in state.genres,
-                                onClick = { vm.toggleGenre(g.movieId) },
-                                label = { Text(g.name) },
-                            )
+                            SeatTag(g.name, selected = g.movieId in state.genres, onClick = { vm.toggleGenre(g.movieId) })
                         }
                     }
                     if (!edit) {
-                        Spacer(Modifier.height(24.dp))
-                        TextButton(onClick = backupActions.import, enabled = !backupActions.busy) {
-                            Text("У меня есть резервная копия — восстановить")
-                        }
+                        Spacer(Modifier.height(20.dp))
+                        TextAction(
+                            "У меня есть резервная копия — восстановить",
+                            backupActions.import,
+                            enabled = !backupActions.busy,
+                            modifier = Modifier.padding(horizontal = 6.dp),
+                        )
                     }
+                    Spacer(Modifier.height(16.dp))
                 }
             } else {
                 when (val c = state.candidates) {
@@ -206,21 +219,17 @@ fun OnboardingScreen(edit: Boolean, onDone: () -> Unit) {
                     is LoadState.Error -> ErrorBox(c.message, onRetry = vm::loadCandidates)
                     is LoadState.Success -> LazyVerticalGrid(
                         columns = GridCells.Adaptive(104.dp),
-                        contentPadding = PaddingValues(16.dp),
+                        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 16.dp),
                         horizontalArrangement = Arrangement.spacedBy(10.dp),
                         verticalArrangement = Arrangement.spacedBy(12.dp),
                     ) {
                         item(span = { GridItemSpan(maxLineSpan) }) {
-                            Column {
-                                Text(
-                                    "Что из этого вам понравилось?",
-                                    style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold,
-                                )
-                                Text(
-                                    "Отметьте несколько — чем больше, тем точнее подборка.",
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                )
-                            }
+                            ScreenHeader(
+                                "Что из этого понравилось?",
+                                kicker = "Шаг 2 из 2 · фильмы",
+                                subtitle = "Отметьте несколько — чем больше, тем точнее подборка.",
+                                modifier = Modifier.offset(x = (-16).dp),
+                            )
                         }
                         items(c.data, key = { "${it.type.path}:${it.id}" }) { t ->
                             SelectablePoster(t, t.key in state.selected) { vm.toggleTitle(t) }
@@ -229,22 +238,24 @@ fun OnboardingScreen(edit: Boolean, onDone: () -> Unit) {
                 }
             }
         }
-        Surface(tonalElevation = 3.dp) {
-            Row(
-                Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                if (state.step == 0) {
-                    TextButton(onClick = { vm.skip(onDone) }) { Text(if (edit) "Отмена" else "Пропустить") }
-                    Spacer(Modifier.weight(1f))
-                    Button(onClick = { vm.toStep(1) }) { Text("Далее") }
-                } else {
-                    TextButton(onClick = { vm.toStep(0) }) { Text("Назад") }
-                    Spacer(Modifier.weight(1f))
-                    Button(onClick = { vm.finish(onDone) }, enabled = !state.saving) {
-                        Text(if (state.selected.isEmpty()) "Готово" else "Готово · ${state.selected.size}")
-                    }
-                }
+        Perforation(Modifier.padding(horizontal = 12.dp))
+        Row(
+            Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 10.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            if (state.step == 0) {
+                TextAction(if (edit) "Отмена" else "Пропустить", { vm.skip(onDone) }, color = Brand.TextMuted)
+                Spacer(Modifier.weight(1f))
+                MarqueeButton("Далее", { vm.toStep(1) })
+            } else {
+                TextAction("Назад", { vm.toStep(0) }, color = Brand.TextMuted)
+                Spacer(Modifier.weight(1f))
+                MarqueeButton(
+                    if (state.selected.isEmpty()) "Готово" else "Готово · ${state.selected.size}",
+                    { vm.finish(onDone) },
+                    enabled = !state.saving,
+                    loading = state.saving,
+                )
             }
         }
     }
@@ -252,21 +263,17 @@ fun OnboardingScreen(edit: Boolean, onDone: () -> Unit) {
 
 @Composable
 private fun SelectablePoster(title: Title, selected: Boolean, onClick: () -> Unit) {
-    Column(Modifier.clickable(onClick = onClick)) {
+    Column(Modifier.pressClickable(role = Role.Checkbox, onClick = onClick)) {
         Box {
             Poster(
                 title.posterPath,
                 Modifier.fillMaxWidth().then(
-                    if (selected) Modifier.border(BorderStroke(3.dp, MaterialTheme.colorScheme.primary), RoundedCornerShape(12.dp))
+                    if (selected) Modifier.border(BorderStroke(2.dp, Brand.Gold), RoundedCornerShape(6.dp))
                     else Modifier
                 ),
             )
             if (selected) {
-                Box(
-                    Modifier.align(Alignment.TopEnd).padding(6.dp).size(26.dp).clip(CircleShape)
-                        .background(MaterialTheme.colorScheme.primary),
-                    contentAlignment = Alignment.Center,
-                ) { Icon(Icons.Filled.Check, null, tint = Color.White, modifier = Modifier.size(18.dp)) }
+                Stamp("Моё", Brand.Gold, Modifier.align(Alignment.TopEnd).padding(8.dp).background(Color.Black.copy(alpha = 0.6f)))
             }
         }
         Text(

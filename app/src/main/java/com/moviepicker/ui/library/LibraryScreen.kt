@@ -1,5 +1,27 @@
 package com.moviepicker.ui.library
 
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.unit.dp
+import com.moviepicker.ui.design.Brand
+import com.moviepicker.ui.design.ScreenHeader
+import com.moviepicker.ui.design.TicketToggle
+import com.moviepicker.ui.design.pressClickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material.icons.Icons
@@ -32,7 +54,6 @@ private enum class LibraryTab(val label: String, val empty: String, val filter: 
     DISLIKED("Не моё", "Здесь будет то, что вам не понравилось", { it.reaction < 0 }),
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LibraryScreen(onOpen: (Title) -> Unit, onSettings: () -> Unit) {
     val container = LocalContext.current.container
@@ -40,35 +61,47 @@ fun LibraryScreen(onOpen: (Title) -> Unit, onSettings: () -> Unit) {
     val profile by container.tasteProfile.collectAsStateWithLifecycle()
     val marks by container.marks.collectAsStateWithLifecycle()
     var tabIndex by rememberSaveable { mutableIntStateOf(0) }
-    val tab = LibraryTab.entries[tabIndex]
-    val items = remember(entities, tab) { entities.filter(tab.filter).map { it.toTitle() } }
 
-    Column(Modifier.fillMaxSize()) {
-        TopAppBar(
-            title = { Text("Мои списки") },
-            actions = {
-                IconButton(onClick = onSettings) { Icon(Icons.Filled.Settings, "Настройки") }
-            },
-        )
-        TabRow(selectedTabIndex = tabIndex) {
-            LibraryTab.entries.forEachIndexed { i, t ->
+    Column(Modifier.fillMaxSize().statusBarsPadding()) {
+        ScreenHeader("Мои списки", kicker = "Pickture · мои билеты") {
+            Box(
+                Modifier.size(40.dp).clip(RoundedCornerShape(6.dp)).border(1.dp, Brand.Perforation, RoundedCornerShape(6.dp))
+                    .pressClickable(onClick = onSettings),
+                contentAlignment = Alignment.Center,
+            ) { Icon(Icons.Filled.Settings, "Настройки", tint = Brand.Text, modifier = Modifier.size(20.dp)) }
+        }
+        Spacer(Modifier.height(10.dp))
+        TicketToggle(
+            options = LibraryTab.entries.map { t ->
                 val count = entities.count(t.filter)
-                Tab(
-                    selected = i == tabIndex,
-                    onClick = { tabIndex = i },
-                    text = { Text(if (count > 0) "${t.label} · $count" else t.label, maxLines = 1) },
+                if (count > 0) "${t.label} · $count" else t.label
+            },
+            selected = tabIndex,
+            onSelect = { tabIndex = it },
+            modifier = Modifier.padding(horizontal = 16.dp),
+        )
+        AnimatedContent(
+            targetState = tabIndex,
+            transitionSpec = {
+                val dir = if (targetState > initialState) 1 else -1
+                (slideInHorizontally(tween(280)) { it * dir / 4 } + fadeIn(tween(220))) togetherWith
+                    (slideOutHorizontally(tween(280)) { -it * dir / 4 } + fadeOut(tween(160)))
+            },
+            label = "libraryTab",
+        ) { index ->
+            val shown = remember(entities, index) {
+                LibraryTab.entries[index].let { t -> entities.filter(t.filter).map { it.toTitle() } }
+            }
+            if (shown.isEmpty()) {
+                MessageBox("Пока пусто", LibraryTab.entries[index].empty)
+            } else {
+                TitleGrid(
+                    items = shown,
+                    matchOf = profile::matchPercent,
+                    markOf = { marks[it] },
+                    onOpen = onOpen,
                 )
             }
-        }
-        if (items.isEmpty()) {
-            MessageBox("Пока пусто", tab.empty)
-        } else {
-            TitleGrid(
-                items = items,
-                matchOf = profile::matchPercent,
-                markOf = { marks[it] },
-                onOpen = onOpen,
-            )
         }
     }
 }

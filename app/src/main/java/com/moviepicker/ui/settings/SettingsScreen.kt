@@ -1,5 +1,16 @@
 package com.moviepicker.ui.settings
 
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.material3.SwitchDefaults
+import com.moviepicker.ui.design.Brand
+import com.moviepicker.ui.design.Perforation
+import com.moviepicker.ui.design.PicktureTopBar
+import com.moviepicker.ui.design.PkType
+import com.moviepicker.ui.design.TextAction
+import com.moviepicker.ui.design.TicketDialog
+import com.moviepicker.ui.design.TicketOutlineButton
 import android.Manifest
 import android.os.Build
 import android.widget.Toast
@@ -48,7 +59,6 @@ import com.moviepicker.work.Notifications
 import com.moviepicker.work.ReleaseCheckWorker
 import kotlinx.coroutines.launch
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(onBack: () -> Unit, onEditOnboarding: () -> Unit, onEditApiKey: () -> Unit) {
     val context = LocalContext.current
@@ -65,15 +75,10 @@ fun SettingsScreen(onBack: () -> Unit, onEditOnboarding: () -> Unit, onEditApiKe
         }
     }
 
-    Column(Modifier.fillMaxSize()) {
-        TopAppBar(
-            title = { Text("Настройки") },
-            navigationIcon = {
-                IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Назад") }
-            },
-        )
-        Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
-            Header("Ключ TMDB")
+    Column(Modifier.fillMaxSize().statusBarsPadding()) {
+        PicktureTopBar("Настройки", onBack = onBack)
+        Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).navigationBarsPadding()) {
+            Header(1, "Ключ TMDB")
             val key = settings.tmdbApiKey
             Text(
                 if (key.isBlank()) "Ключ не задан"
@@ -81,13 +86,11 @@ fun SettingsScreen(onBack: () -> Unit, onEditOnboarding: () -> Unit, onEditApiKe
                 style = MaterialTheme.typography.bodyMedium,
                 modifier = Modifier.padding(horizontal = 16.dp),
             )
-            Spacer(Modifier.height(8.dp))
-            OutlinedButton(onClick = onEditApiKey, modifier = Modifier.padding(horizontal = 16.dp)) {
-                Text("Изменить ключ")
-            }
+            Spacer(Modifier.height(10.dp))
+            TicketOutlineButton("Изменить ключ", onEditApiKey, Modifier.padding(horizontal = 16.dp))
 
-            HorizontalDivider(Modifier.padding(vertical = 16.dp))
-            Header("Уведомления")
+            Divider()
+            Header(2, "Уведомления")
             SwitchRow(
                 title = "Присылать уведомления",
                 description = "Когда выходит фильм или новый сезон из «Хочу посмотреть», " +
@@ -101,17 +104,19 @@ fun SettingsScreen(onBack: () -> Unit, onEditOnboarding: () -> Unit, onEditApiKe
                 },
             )
             if (settings.notificationsEnabled) {
-                OutlinedButton(
+                Spacer(Modifier.height(4.dp))
+                TicketOutlineButton(
+                    "Проверить сейчас",
                     onClick = {
                         ReleaseCheckWorker.runNow(context)
                         Toast.makeText(context, "Проверяем новинки…", Toast.LENGTH_SHORT).show()
                     },
                     modifier = Modifier.padding(horizontal = 16.dp),
-                ) { Text("Проверить сейчас") }
+                )
             }
 
-            HorizontalDivider(Modifier.padding(vertical = 16.dp))
-            Header("Стартовые предпочтения")
+            Divider()
+            Header(3, "Стартовые предпочтения")
             SwitchRow(
                 title = "Учитывать в рекомендациях",
                 description = "Жанры и фильмы, отмеченные на стартовом экране. Если выключить, " +
@@ -128,93 +133,93 @@ fun SettingsScreen(onBack: () -> Unit, onEditOnboarding: () -> Unit, onEditApiKe
                     append("\nФильмов отмечено: $onboardingLikes")
                 },
                 style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                color = Brand.TextMuted,
                 modifier = Modifier.padding(horizontal = 16.dp),
             )
-            Spacer(Modifier.height(8.dp))
-            OutlinedButton(onClick = onEditOnboarding, modifier = Modifier.padding(horizontal = 16.dp)) {
-                Text("Изменить жанры и фильмы")
-            }
+            Spacer(Modifier.height(10.dp))
+            TicketOutlineButton("Изменить жанры и фильмы", onEditOnboarding, Modifier.padding(horizontal = 16.dp))
 
-            HorizontalDivider(Modifier.padding(vertical = 16.dp))
-            Header("Резервная копия")
+            Divider()
+            Header(4, "Резервная копия")
             Text(
                 "Оценки и списки хранятся только на этом телефоне и пропадут при удалении приложения. " +
                     "Сохраните их в файл, например в Telegram или на Google Диск, и восстановите после переустановки.",
                 style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                color = Brand.TextMuted,
                 modifier = Modifier.padding(horizontal = 16.dp),
             )
-            Spacer(Modifier.height(8.dp))
-            Row(Modifier.padding(horizontal = 16.dp)) {
-                OutlinedButton(onClick = backupActions.export, enabled = !backupActions.busy) {
-                    Text("Сохранить в файл")
-                }
-                Spacer(Modifier.width(8.dp))
-                OutlinedButton(onClick = backupActions.import, enabled = !backupActions.busy) {
-                    Text("Восстановить")
-                }
+            Spacer(Modifier.height(10.dp))
+            Row(Modifier.padding(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                TicketOutlineButton("Сохранить в файл", backupActions.export, enabled = !backupActions.busy)
+                TicketOutlineButton("Восстановить", backupActions.import, enabled = !backupActions.busy)
             }
 
-            HorizontalDivider(Modifier.padding(vertical = 16.dp))
-            Header("Данные")
-            OutlinedButton(onClick = { confirmReset = true }, modifier = Modifier.padding(horizontal = 16.dp)) {
-                Text("Сбросить все оценки и списки")
-            }
+            Divider()
+            Header(5, "Данные")
+            TicketOutlineButton(
+                "Сбросить все оценки и списки", { confirmReset = true },
+                Modifier.padding(horizontal = 16.dp), color = MaterialTheme.colorScheme.error,
+            )
 
-            HorizontalDivider(Modifier.padding(vertical = 16.dp))
-            Header("Обновления")
+            Divider()
+            Header(6, "Обновления")
             Text(
                 "Версия ${container.updater.currentVersion}. Новые версии выходят на GitHub — " +
                     "приложение проверяет их при запуске и предлагает обновиться.",
                 style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                color = Brand.TextMuted,
                 modifier = Modifier.padding(horizontal = 16.dp),
             )
-            Spacer(Modifier.height(8.dp))
-            OutlinedButton(
+            Spacer(Modifier.height(10.dp))
+            TicketOutlineButton(
+                "Проверить обновления",
                 onClick = { scope.launch { container.updater.checkManually() } },
                 modifier = Modifier.padding(horizontal = 16.dp),
-            ) { Text("Проверить обновления") }
+            )
 
-            HorizontalDivider(Modifier.padding(vertical = 16.dp))
+            Divider()
             Text(
                 "Данные о фильмах и сериалах предоставлены TMDB.\n" +
                     "This product uses the TMDB API but is not endorsed or certified by TMDB.",
                 style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                color = Brand.TextMuted,
                 modifier = Modifier.padding(16.dp),
             )
         }
     }
 
     if (confirmReset) {
-        AlertDialog(
-            onDismissRequest = { confirmReset = false },
-            title = { Text("Сбросить всё?") },
-            text = { Text("Удалятся все лайки, дизлайки и список «Хочу посмотреть». Отменить нельзя.") },
-            confirmButton = {
-                TextButton(onClick = {
+        TicketDialog(
+            title = "Сбросить всё?",
+            onDismiss = { confirmReset = false },
+            confirm = {
+                TextAction("Сбросить", color = MaterialTheme.colorScheme.error, onClick = {
                     confirmReset = false
                     scope.launch {
                         container.repository.clearAll()
                         container.recommendations.invalidate()
                     }
-                }) { Text("Сбросить") }
+                })
             },
-            dismissButton = { TextButton(onClick = { confirmReset = false }) { Text("Отмена") } },
-        )
+            dismiss = { TextAction("Отмена", { confirmReset = false }) },
+        ) {
+            Text("Удалятся все лайки, дизлайки и список «Хочу посмотреть». Отменить нельзя.")
+        }
     }
 }
 
 @Composable
-private fun Header(text: String) {
-    Text(
-        text,
-        style = MaterialTheme.typography.titleSmall,
-        color = MaterialTheme.colorScheme.primary,
-        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-    )
+private fun Divider() {
+    Perforation(Modifier.padding(horizontal = 16.dp, vertical = 18.dp))
+}
+
+@Composable
+private fun Header(number: Int, text: String) {
+    Row(Modifier.padding(horizontal = 16.dp).padding(bottom = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+        Text("%02d".format(number), style = PkType.number, color = Brand.Accent)
+        Spacer(Modifier.width(8.dp))
+        Text(text.uppercase(), style = PkType.section, color = Brand.Text)
+    }
 }
 
 @Composable
@@ -225,9 +230,19 @@ private fun SwitchRow(title: String, description: String, checked: Boolean, onCh
     ) {
         Column(Modifier.weight(1f)) {
             Text(title, style = MaterialTheme.typography.bodyLarge)
-            Text(description, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(description, style = MaterialTheme.typography.bodySmall, color = Brand.TextMuted)
         }
         Spacer(Modifier.width(12.dp))
-        Switch(checked = checked, onCheckedChange = onChange)
+        Switch(
+            checked = checked,
+            onCheckedChange = onChange,
+            colors = SwitchDefaults.colors(
+                checkedTrackColor = Brand.Gold,
+                checkedThumbColor = Brand.OnGold,
+                uncheckedTrackColor = Brand.Ticket,
+                uncheckedBorderColor = Brand.Perforation,
+                uncheckedThumbColor = Brand.TextMuted,
+            ),
+        )
     }
 }

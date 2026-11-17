@@ -1,5 +1,26 @@
 package com.moviepicker.desktop.ui
 
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.IntrinsicSize
+import androidx.compose.foundation.layout.heightIn
+import com.moviepicker.desktop.ui.design.Brand
+import com.moviepicker.desktop.ui.design.PkType
+import com.moviepicker.desktop.ui.design.ScreenHeader
+import com.moviepicker.desktop.ui.design.SectionHeader
+import com.moviepicker.desktop.ui.design.StampIconButton
+import com.moviepicker.desktop.ui.design.TicketOutlineButton
+import com.moviepicker.desktop.ui.design.TicketShape
+import com.moviepicker.desktop.ui.design.TicketToggle
+import com.moviepicker.desktop.ui.design.VerticalPerforation
+import com.moviepicker.desktop.ui.design.pressClickable
+import com.moviepicker.desktop.ui.design.ticketFieldColors
 import androidx.compose.foundation.VerticalScrollbar
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -104,15 +125,8 @@ fun RecsScreen(c: DesktopContainer, nav: Navigator) {
     }
 
     Column(Modifier.fillMaxSize().padding(start = 32.dp, top = 32.dp, end = 32.dp)) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Column(Modifier.weight(1f)) {
-                Text("Для вас", style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.Bold)
-                Text(
-                    "Подборка на основе ваших оценок. Оценивайте прямо здесь — список станет точнее.",
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-            IconButton(onClick = { load(force = true) }, enabled = !refreshing) { Icon(Icons.Filled.Refresh, "Обновить") }
+        ScreenHeader("Для вас", subtitle = "Подборка на основе ваших оценок. Оценивайте прямо здесь — список станет точнее.") {
+            TicketOutlineButton("Обновить", { load(force = true) }, icon = Icons.Filled.Refresh, enabled = !refreshing)
         }
         Spacer(Modifier.height(16.dp))
         when (val s = RecsCache.state) {
@@ -120,16 +134,16 @@ fun RecsScreen(c: DesktopContainer, nav: Navigator) {
             is LoadState.Error -> ErrorBox(s.message, onRetry = { load(true) })
             is LoadState.Success -> {
                 val visible = s.data.filter { it.title.key !in RecsCache.hidden }
-                SingleChoiceSegmentedButtonRow(Modifier.widthIn(max = 420.dp)) {
-                    MediaType.entries.forEachIndexed { index, type ->
+                val types = MediaType.entries
+                TicketToggle(
+                    options = types.map { type ->
                         val count = visible.count { it.title.type == type }
-                        SegmentedButton(
-                            selected = RecsCache.tab == type,
-                            onClick = { RecsCache.tab = type },
-                            shape = SegmentedButtonDefaults.itemShape(index, MediaType.entries.size),
-                        ) { Text(if (type == MediaType.MOVIE) "Фильмы · $count" else "Сериалы · $count") }
-                    }
-                }
+                        if (type == MediaType.MOVIE) "Фильмы · $count" else "Сериалы · $count"
+                    },
+                    selected = types.indexOf(RecsCache.tab),
+                    onSelect = { RecsCache.tab = types[it] },
+                    modifier = Modifier.widthIn(max = 420.dp),
+                )
                 Spacer(Modifier.height(16.dp))
                 val items = visible.filter { it.title.type == RecsCache.tab }
                 if (items.isEmpty()) {
@@ -152,6 +166,7 @@ fun RecsScreen(c: DesktopContainer, nav: Navigator) {
                             items(items, key = { "${it.title.type.path}:${it.title.id}" }) { rec ->
                                 RecommendationCard(
                                     rec,
+                                    modifier = Modifier.animateItem(),
                                     onOpen = { nav.openTitle(rec.title) },
                                     onLike = { hide(rec.title); scope.launch { c.repository.setReaction(rec.title, Reaction.LIKE) } },
                                     onDislike = { hide(rec.title); scope.launch { c.repository.setReaction(rec.title, Reaction.DISLIKE) } },
@@ -167,6 +182,9 @@ fun RecsScreen(c: DesktopContainer, nav: Navigator) {
     }
 }
 
+private val StubWidth = 64.dp
+
+/** Рекомендация — билет: постер, описание, линия отрыва и корешок с процентом совпадения. */
 @Composable
 private fun RecommendationCard(
     rec: Recommendation,
@@ -174,54 +192,74 @@ private fun RecommendationCard(
     onLike: () -> Unit,
     onDislike: () -> Unit,
     onWatchlist: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     val t = rec.title
-    Surface(
-        color = MaterialTheme.colorScheme.surfaceContainer,
-        shape = RoundedCornerShape(16.dp),
-        modifier = Modifier.clip(RoundedCornerShape(16.dp)).clickable(onClick = onOpen),
+    Row(
+        modifier
+            .fillMaxWidth()
+            .height(IntrinsicSize.Min)
+            .clip(TicketShape(notchRadius = 7.dp, cornerRadius = 10.dp, notchOffset = StubWidth, fromEnd = true, vertical = true))
+            .background(Brand.Ticket)
+            .pressClickable(onClick = onOpen),
     ) {
-        Row(Modifier.padding(12.dp)) {
-            Poster(t.posterPath, Modifier.width(120.dp))
-            Spacer(Modifier.width(16.dp))
-            Column(Modifier.weight(1f)) {
-                Text(t.name, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold,
-                    maxLines = 2, overflow = TextOverflow.Ellipsis)
-                Text(t.subtitle(), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Spacer(Modifier.height(6.dp))
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    rec.matchPercent?.let {
-                        Text("Совпадение $it%", color = matchColor(it), fontWeight = FontWeight.Bold)
-                        Spacer(Modifier.width(12.dp))
-                    }
-                    if (t.voteCount >= 5) {
-                        Icon(Icons.Filled.Star, null, tint = Gold, modifier = Modifier.size(16.dp))
-                        Text(" %.1f".format(t.rating))
-                    }
-                }
-                Spacer(Modifier.height(6.dp))
-                Text(rec.reason, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary,
-                    maxLines = 2, overflow = TextOverflow.Ellipsis)
-                Spacer(Modifier.weight(1f))
-                Row {
-                    QuickAction(Icons.Filled.FavoriteBorder, "Нравится", onLike)
-                    QuickAction(Icons.Outlined.ThumbDown, "Не моё", onDislike)
-                    QuickAction(Icons.Filled.BookmarkBorder, "Хочу посмотреть", onWatchlist)
-                }
+        Poster(
+            t.posterPath,
+            Modifier.width(124.dp).fillMaxHeight().heightIn(min = 186.dp),
+            shape = RoundedCornerShape(0.dp),
+            ratio = null,
+        )
+        Column(Modifier.weight(1f).padding(horizontal = 16.dp, vertical = 14.dp)) {
+            Text(
+                t.name, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold,
+                maxLines = 2, overflow = TextOverflow.Ellipsis,
+            )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(t.subtitle(), style = MaterialTheme.typography.bodySmall, color = Brand.TextMuted)
+                if (t.voteCount >= 5) Text("  ★ %.1f".format(t.rating), style = PkType.number, color = Brand.Gold)
             }
+            Spacer(Modifier.height(6.dp))
+            Text(
+                rec.reason, style = MaterialTheme.typography.bodySmall, color = Brand.Accent,
+                maxLines = 2, overflow = TextOverflow.Ellipsis,
+            )
+            Spacer(Modifier.weight(1f).heightIn(min = 10.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                QuickAction(Icons.Filled.FavoriteBorder, "Нравится", onLike, Brand.Accent)
+                QuickAction(Icons.Outlined.ThumbDown, "Не моё", onDislike, Brand.Text)
+                QuickAction(Icons.Filled.BookmarkBorder, "Хочу посмотреть", onWatchlist, Brand.Gold)
+            }
+        }
+        VerticalPerforation(inset = 9.dp)
+        Column(
+            Modifier.width(StubWidth).fillMaxHeight(),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center,
+        ) {
+            val match = rec.matchPercent
+            if (match != null) {
+                Row(verticalAlignment = Alignment.Bottom) {
+                    Text("$match", style = PkType.screenTitle, color = matchColor(match))
+                    Text("%", style = PkType.number, color = matchColor(match), modifier = Modifier.padding(bottom = 4.dp))
+                }
+            } else {
+                Text("—", style = PkType.screenTitle, color = Brand.TextMuted)
+            }
+            Spacer(Modifier.height(4.dp))
+            Text("СОВП.", style = PkType.tiny, color = Brand.TextMuted)
         }
     }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun QuickAction(icon: ImageVector, label: String, onClick: () -> Unit) {
+private fun QuickAction(icon: ImageVector, label: String, onClick: () -> Unit, color: androidx.compose.ui.graphics.Color) {
     TooltipBox(
         positionProvider = TooltipDefaults.rememberPlainTooltipPositionProvider(),
         tooltip = { PlainTooltip { Text(label) } },
         state = rememberTooltipState(),
     ) {
-        IconButton(onClick = onClick) { Icon(icon, label) }
+        StampIconButton(icon, label, onClick, color = color)
     }
 }
 
@@ -252,23 +290,24 @@ fun SearchScreen(c: DesktopContainer, nav: Navigator) {
     }
 
     Column(Modifier.fillMaxSize().padding(start = 32.dp, top = 32.dp, end = 32.dp)) {
+        ScreenHeader("Поиск", kicker = "Pickture · касса")
+        Spacer(Modifier.height(8.dp))
         OutlinedTextField(
             value = SearchCache.query,
             onValueChange = { SearchCache.query = it },
             placeholder = { Text("Фильм или сериал") },
-            leadingIcon = { Icon(Icons.Filled.Search, null) },
+            leadingIcon = { Icon(Icons.Filled.Search, null, tint = Brand.Gold) },
+            shape = TicketShape(notchRadius = 6.dp, cornerRadius = 8.dp),
+            colors = ticketFieldColors(),
             trailingIcon = {
                 if (SearchCache.query.isNotEmpty()) IconButton(onClick = { SearchCache.query = "" }) { Icon(Icons.Filled.Close, "Очистить") }
             },
             singleLine = true,
             modifier = Modifier.widthIn(max = 640.dp).fillMaxWidth(),
         )
-        Spacer(Modifier.height(16.dp))
-        Text(
-            if (SearchCache.query.isBlank()) "Популярное на этой неделе" else "Результаты поиска",
-            style = MaterialTheme.typography.titleMedium,
-        )
         Spacer(Modifier.height(12.dp))
+        SectionHeader(if (SearchCache.query.isBlank()) "Популярное на этой неделе" else "Результаты поиска")
+        Spacer(Modifier.height(8.dp))
         when {
             error != null && SearchCache.items.isEmpty() -> ErrorBox(error!!, onRetry = { retry++ })
             loading && SearchCache.items.isEmpty() -> LoadingBox()
@@ -289,7 +328,7 @@ private fun TitleGrid(
 ) {
     Box(Modifier.fillMaxSize()) {
         LazyVerticalGrid(
-            columns = GridCells.Adaptive(168.dp),
+            columns = GridCells.Adaptive(164.dp),
             state = state,
             contentPadding = PaddingValues(bottom = 32.dp, end = 12.dp),
             horizontalArrangement = Arrangement.spacedBy(16.dp),
@@ -322,22 +361,31 @@ fun LibraryScreen(c: DesktopContainer, nav: Navigator) {
     val marks by c.marks.collectAsState()
 
     Column(Modifier.fillMaxSize().padding(start = 32.dp, top = 32.dp, end = 32.dp)) {
-        Text("Мои списки", style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.Bold)
-        Spacer(Modifier.height(16.dp))
-        SingleChoiceSegmentedButtonRow(Modifier.widthIn(max = 640.dp)) {
-            LibraryTab.entries.forEachIndexed { index, tab ->
+        ScreenHeader("Мои списки", kicker = "Pickture · мои билеты")
+        Spacer(Modifier.height(12.dp))
+        TicketToggle(
+            options = LibraryTab.entries.map { tab ->
                 val count = entities.count { it.matches(tab) }
-                SegmentedButton(
-                    selected = LibraryCache.tab == tab,
-                    onClick = { LibraryCache.tab = tab },
-                    shape = SegmentedButtonDefaults.itemShape(index, LibraryTab.entries.size),
-                ) { Text(if (count > 0) "${tab.label} · $count" else tab.label) }
-            }
-        }
+                if (count > 0) "${tab.label} · $count" else tab.label
+            },
+            selected = LibraryCache.tab.ordinal,
+            onSelect = { LibraryCache.tab = LibraryTab.entries[it] },
+            modifier = Modifier.widthIn(max = 640.dp),
+        )
         Spacer(Modifier.height(16.dp))
-        val items = entities.filter { it.matches(LibraryCache.tab) }.map { it.toTitle() }
-        if (items.isEmpty()) MessageBox("Пока пусто", LibraryCache.tab.empty)
-        else TitleGrid(items, c, nav, profile::matchPercent, marks)
+        AnimatedContent(
+            targetState = LibraryCache.tab,
+            transitionSpec = {
+                val dir = if (targetState.ordinal > initialState.ordinal) 1 else -1
+                (slideInHorizontally(tween(280)) { it * dir / 6 } + fadeIn(tween(220))) togetherWith
+                    (slideOutHorizontally(tween(280)) { -it * dir / 6 } + fadeOut(tween(160)))
+            },
+            label = "libraryTab",
+        ) { tab ->
+            val items = entities.filter { it.matches(tab) }.map { it.toTitle() }
+            if (items.isEmpty()) MessageBox("Пока пусто", tab.empty)
+            else TitleGrid(items, c, nav, profile::matchPercent, marks)
+        }
     }
 }
 

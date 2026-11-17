@@ -1,5 +1,13 @@
 package com.moviepicker.ui.trailer
 
+import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.statusBarsPadding
+import com.moviepicker.ui.design.Brand
+import com.moviepicker.ui.design.PicktureTopBar
+import com.moviepicker.ui.design.SectionHeader
+import com.moviepicker.ui.design.TicketOutlineButton
+import com.moviepicker.ui.design.TicketShape
+import com.moviepicker.ui.design.pressClickable
 import android.app.Activity
 import android.content.Context
 import android.content.ContextWrapper
@@ -126,14 +134,7 @@ fun TrailerScreen(titleKey: TitleKey, videoKey: String, onBack: () -> Unit) {
     // поэтому при повороте видео продолжается, а не начинается заново.
     Column(Modifier.fillMaxSize().background(if (landscape) Color.Black else MaterialTheme.colorScheme.background)) {
         if (!landscape) {
-            TopAppBar(
-                title = {
-                    Text(currentVideo?.name ?: "Трейлер", maxLines = 1, overflow = TextOverflow.Ellipsis)
-                },
-                navigationIcon = {
-                    IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Назад") }
-                },
-            )
+            PicktureTopBar(currentVideo?.name ?: "Трейлер", onBack = onBack, modifier = Modifier.statusBarsPadding())
         }
         Box(
             if (landscape) Modifier.fillMaxSize() else Modifier.fillMaxWidth().aspectRatio(16f / 9f).background(Color.Black),
@@ -144,16 +145,14 @@ fun TrailerScreen(titleKey: TitleKey, videoKey: String, onBack: () -> Unit) {
         if (!landscape) {
             if (error != null) {
                 Surface(
-                    color = MaterialTheme.colorScheme.surfaceContainer,
-                    shape = RoundedCornerShape(12.dp),
+                    color = Brand.Ticket,
+                    shape = TicketShape(notchRadius = 6.dp, cornerRadius = 8.dp),
                     modifier = Modifier.fillMaxWidth().padding(16.dp),
                 ) {
                     Column(Modifier.padding(12.dp)) {
                         Text(error!!, style = MaterialTheme.typography.bodyMedium)
                         Spacer(Modifier.height(8.dp))
-                        OutlinedButton(onClick = { uriHandler.openUri("https://www.youtube.com/watch?v=$current") }) {
-                            Text("Открыть на YouTube")
-                        }
+                        TicketOutlineButton("Открыть на YouTube", { uriHandler.openUri("https://www.youtube.com/watch?v=$current") })
                     }
                 }
             }
@@ -164,12 +163,7 @@ fun TrailerScreen(titleKey: TitleKey, videoKey: String, onBack: () -> Unit) {
                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
             )
             if (videos.size > 1) {
-                Text(
-                    "Все ролики",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold,
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
-                )
+                SectionHeader("Все ролики", number = videos.size)
                 LazyColumn(
                     contentPadding = PaddingValues(16.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp),
@@ -187,9 +181,10 @@ fun TrailerScreen(titleKey: TitleKey, videoKey: String, onBack: () -> Unit) {
 @Composable
 private fun VideoRow(video: Video, selected: Boolean, onClick: () -> Unit) {
     Row(
-        Modifier.fillMaxWidth().clip(RoundedCornerShape(10.dp))
-            .background(if (selected) MaterialTheme.colorScheme.primaryContainer else Color.Transparent)
-            .clickable(onClick = onClick)
+        Modifier.fillMaxWidth().clip(RoundedCornerShape(8.dp))
+            .then(if (selected) Modifier.border(1.5.dp, Brand.Gold, RoundedCornerShape(8.dp)) else Modifier)
+            .background(if (selected) Brand.Ticket else Color.Transparent)
+            .pressClickable(onClick = onClick)
             .padding(6.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -197,7 +192,7 @@ private fun VideoRow(video: Video, selected: Boolean, onClick: () -> Unit) {
             model = "https://i.ytimg.com/vi/${video.key}/mqdefault.jpg",
             contentDescription = null,
             contentScale = ContentScale.Crop,
-            modifier = Modifier.width(128.dp).aspectRatio(16f / 9f).clip(RoundedCornerShape(8.dp))
+            modifier = Modifier.width(128.dp).aspectRatio(16f / 9f).clip(RoundedCornerShape(5.dp))
                 .background(MaterialTheme.colorScheme.surfaceVariant),
         )
         Spacer(Modifier.width(12.dp))

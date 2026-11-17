@@ -1,5 +1,9 @@
 package com.moviepicker.ui.update
 
+import com.moviepicker.ui.design.Brand
+import com.moviepicker.ui.design.PkType
+import com.moviepicker.ui.design.TextAction
+import com.moviepicker.ui.design.TicketDialog
 import android.widget.Toast
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -36,50 +40,48 @@ fun UpdatePrompt() {
     LaunchedEffect(Unit) { updater.checkOnLaunch() }
 
     when (val s = state) {
-        is UpdateState.Available -> AlertDialog(
-            onDismissRequest = updater::dismiss,
-            title = { Text("Доступна версия ${s.info.version}") },
-            text = {
-                Column(Modifier.heightIn(max = 320.dp).verticalScroll(rememberScrollState())) {
-                    Text("У вас ${updater.currentVersion}. Обновление скачается и установится поверх — оценки сохранятся.")
-                    if (s.info.notes.isNotBlank()) {
-                        Spacer(Modifier.height(12.dp))
-                        Text("Что нового", style = MaterialTheme.typography.titleSmall)
-                        Text(s.info.notes, style = MaterialTheme.typography.bodySmall)
-                    }
+        is UpdateState.Available -> TicketDialog(
+            title = "Доступна версия ${s.info.version}",
+            onDismiss = updater::dismiss,
+            confirm = { TextAction("Обновить", { scope.launch { updater.download(s.info) } }, color = Brand.Gold) },
+            dismiss = { TextAction("Позже", updater::dismiss, color = Brand.TextMuted) },
+        ) {
+            Column(Modifier.heightIn(max = 320.dp).verticalScroll(rememberScrollState())) {
+                Text("У вас ${updater.currentVersion}. Обновление скачается и установится поверх — оценки сохранятся.")
+                if (s.info.notes.isNotBlank()) {
+                    Spacer(Modifier.height(12.dp))
+                    Text("ЧТО НОВОГО", style = PkType.label, color = Brand.Gold)
+                    Text(s.info.notes, style = MaterialTheme.typography.bodySmall)
                 }
-            },
-            confirmButton = {
-                TextButton(onClick = { scope.launch { updater.download(s.info) } }) { Text("Обновить") }
-            },
-            dismissButton = { TextButton(onClick = updater::dismiss) { Text("Позже") } },
-        )
-        is UpdateState.Downloading -> AlertDialog(
-            onDismissRequest = {},
-            title = { Text("Скачиваем ${s.info.version}") },
-            text = {
-                Column {
-                    LinearProgressIndicator(progress = { s.progress }, modifier = Modifier.fillMaxWidth())
-                    Spacer(Modifier.height(8.dp))
-                    Text("${(s.progress * 100).toInt()}%")
-                }
-            },
-            confirmButton = {},
-        )
-        is UpdateState.NeedsPermission -> AlertDialog(
-            onDismissRequest = updater::dismiss,
-            title = { Text("Нужно разрешение") },
-            text = {
-                Text(
-                    "Включите для Pickture «Разрешить из этого источника» в открывшихся настройках, " +
-                        "вернитесь сюда и нажмите «Установить»."
+            }
+        }
+        is UpdateState.Downloading -> TicketDialog(
+            title = "Скачиваем ${s.info.version}",
+            onDismiss = {},
+            confirm = null,
+        ) {
+            Column {
+                LinearProgressIndicator(
+                    progress = { s.progress },
+                    modifier = Modifier.fillMaxWidth(),
+                    color = Brand.Gold,
+                    trackColor = Brand.Perforation,
                 )
-            },
-            confirmButton = {
-                TextButton(onClick = { updater.install(s.info, s.file) }) { Text("Установить") }
-            },
-            dismissButton = { TextButton(onClick = updater::dismiss) { Text("Позже") } },
-        )
+                Spacer(Modifier.height(8.dp))
+                Text("${(s.progress * 100).toInt()}%", style = PkType.number, color = Brand.Gold)
+            }
+        }
+        is UpdateState.NeedsPermission -> TicketDialog(
+            title = "Нужно разрешение",
+            onDismiss = updater::dismiss,
+            confirm = { TextAction("Установить", { updater.install(s.info, s.file) }, color = Brand.Gold) },
+            dismiss = { TextAction("Позже", updater::dismiss, color = Brand.TextMuted) },
+        ) {
+            Text(
+                "Включите для Pickture «Разрешить из этого источника» в открывшихся настройках, " +
+                    "вернитесь сюда и нажмите «Установить»."
+            )
+        }
         is UpdateState.UpToDate -> {
             LaunchedEffect(s) {
                 Toast.makeText(context, "У вас последняя версия ${updater.currentVersion}", Toast.LENGTH_SHORT).show()

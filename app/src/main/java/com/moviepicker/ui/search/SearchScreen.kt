@@ -1,5 +1,15 @@
 package com.moviepicker.ui.search
 
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.width
+import androidx.compose.ui.Alignment
+import com.moviepicker.ui.design.Brand
+import com.moviepicker.ui.design.Perforation
+import com.moviepicker.ui.design.PkType
+import com.moviepicker.ui.design.ScreenHeader
+import com.moviepicker.ui.design.TicketShape
+import com.moviepicker.ui.design.ticketFieldColors
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -111,19 +121,21 @@ fun SearchScreen(onOpen: (Title) -> Unit) {
     val marks by vm.marks.collectAsStateWithLifecycle()
 
     Column(Modifier.fillMaxSize().statusBarsPadding()) {
+        ScreenHeader("Поиск", kicker = "Pickture · касса")
         OutlinedTextField(
             value = state.query,
             onValueChange = vm::onQueryChange,
-            modifier = Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, top = 12.dp),
+            modifier = Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, top = 8.dp),
             placeholder = { Text("Фильм или сериал") },
-            leadingIcon = { Icon(Icons.Filled.Search, null) },
+            leadingIcon = { Icon(Icons.Filled.Search, null, tint = Brand.Gold) },
             trailingIcon = {
                 if (state.query.isNotEmpty()) {
                     IconButton(onClick = { vm.onQueryChange("") }) { Icon(Icons.Filled.Close, "Очистить") }
                 }
             },
             singleLine = true,
-            shape = MaterialTheme.shapes.large,
+            shape = TicketShape(notchRadius = 6.dp, cornerRadius = 8.dp),
+            colors = ticketFieldColors(),
         )
         when {
             state.items.isEmpty() && state.error != null -> ErrorBox(state.error!!, onRetry = vm::retry)
@@ -138,10 +150,14 @@ fun SearchScreen(onOpen: (Title) -> Unit) {
                 canLoadMore = state.hasMore && state.error == null,
                 onLoadMore = vm::loadMore,
                 header = {
-                    Text(
-                        if (state.isSearch) "Результаты поиска" else "Популярное на этой неделе",
-                        style = MaterialTheme.typography.titleMedium,
-                    )
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            (if (state.isSearch) "Результаты поиска" else "Популярное на этой неделе").uppercase(),
+                            style = PkType.section,
+                        )
+                        Spacer(Modifier.width(10.dp))
+                        Perforation(Modifier.weight(1f))
+                    }
                 },
             )
         }

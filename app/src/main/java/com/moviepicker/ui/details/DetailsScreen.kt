@@ -1,5 +1,22 @@
 package com.moviepicker.ui.details
 
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.IntrinsicSize
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.material.icons.filled.Event
+import androidx.compose.ui.text.font.FontStyle
+import androidx.compose.ui.unit.sp
+import com.moviepicker.ui.design.BackButton
+import com.moviepicker.ui.design.Brand
+import com.moviepicker.ui.design.MarqueeButton
+import com.moviepicker.ui.design.PkType
+import com.moviepicker.ui.design.SectionHeader
+import com.moviepicker.ui.design.Stamp
+import com.moviepicker.ui.design.StampButton
+import com.moviepicker.ui.design.TicketField
+import com.moviepicker.ui.design.TicketShape
+import com.moviepicker.ui.design.VerticalPerforation
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -146,16 +163,11 @@ fun DetailsScreen(
                 onTrailer = onTrailer,
             )
         }
-        IconButton(
-            onClick = onBack,
-            modifier = Modifier.statusBarsPadding().padding(8.dp),
-            colors = IconButtonDefaults.iconButtonColors(containerColor = Color.Black.copy(alpha = 0.5f)),
-        ) {
-            Icon(Icons.AutoMirrored.Filled.ArrowBack, "Назад", tint = Color.White)
-        }
+        BackButton(onBack, Modifier.statusBarsPadding().padding(10.dp), onImage = true)
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun DetailsContent(
     details: TitleDetails,
@@ -172,7 +184,7 @@ private fun DetailsContent(
 
     LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = 32.dp)) {
         item {
-            Box(Modifier.fillMaxWidth().height(250.dp)) {
+            Box(Modifier.fillMaxWidth().height(240.dp)) {
                 AsyncImage(
                     model = Images.backdrop(t.backdropPath) ?: Images.poster(t.posterPath, "w780"),
                     contentDescription = null,
@@ -191,87 +203,96 @@ private fun DetailsContent(
             }
         }
         item {
-            Row(Modifier.padding(horizontal = 16.dp).offset(y = (-56).dp)) {
-                Poster(t.posterPath, Modifier.width(112.dp))
+            Row(Modifier.padding(horizontal = 16.dp).offset(y = (-60).dp)) {
+                Poster(t.posterPath, Modifier.width(108.dp))
                 Spacer(Modifier.width(14.dp))
-                Column(Modifier.weight(1f).padding(top = 60.dp)) {
-                    Text(t.name, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
-                    t.originalName?.let {
-                        Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Column(Modifier.weight(1f).padding(top = 58.dp)) {
+                    if (details.genres.isNotEmpty()) {
+                        Text(
+                            details.genres.take(3).joinToString(" · ").uppercase(),
+                            style = PkType.kicker.copy(letterSpacing = 1.sp), color = Brand.Gold, maxLines = 2,
+                        )
                     }
-                    Spacer(Modifier.height(6.dp))
-                    Text(
-                        metaLine(details),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
+                    Text(t.name.uppercase(), style = PkType.screenTitle.copy(fontSize = 22.sp, lineHeight = 26.sp), color = Brand.Text)
+                    t.originalName?.let {
+                        Text(it, style = MaterialTheme.typography.bodySmall, color = Brand.TextMuted)
+                    }
                 }
             }
         }
         item {
-            Column(Modifier.offset(y = (-40).dp).padding(horizontal = 16.dp)) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    if (t.voteCount > 0) {
-                        Icon(Icons.Filled.Star, null, tint = Gold, modifier = Modifier.size(18.dp))
-                        Text(
-                            " %.1f".format(t.rating),
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold,
-                        )
-                        Text(
-                            "  ${t.voteCount} оценок TMDB",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                        Spacer(Modifier.width(16.dp))
+            Column(Modifier.offset(y = (-44).dp).padding(horizontal = 16.dp)) {
+                FlowRow(
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    t.year?.let { TicketField("Год", it.toString()) }
+                    if (t.type == MediaType.TV) {
+                        details.seasons?.let { TicketField("Сезоны", it.toString()) }
+                    } else {
+                        details.runtimeMinutes?.let { m -> TicketField("Хрон.", "%d:%02d".format(m / 60, m % 60)) }
                     }
+                    if (t.voteCount > 0) TicketField("TMDB", "★ %.1f".format(t.rating), valueColor = Brand.Gold)
                     if (match != null) {
-                        Text(
-                            "Совпадение $match%",
-                            style = MaterialTheme.typography.titleSmall,
-                            color = matchColor(match),
-                            fontWeight = FontWeight.Bold,
-                        )
+                        Spacer(Modifier.width(4.dp))
+                        Stamp("Совпадение $match%", matchColor(match), Modifier.padding(top = 10.dp))
                     }
                 }
                 Spacer(Modifier.height(16.dp))
-                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
-                    ActionButton(
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    StampButton(
                         icon = if (mark.reaction == Reaction.LIKE) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder,
                         label = "Нравится",
                         selected = mark.reaction == Reaction.LIKE,
+                        color = Brand.Accent,
                         onClick = { onReact(Reaction.LIKE) },
+                        modifier = Modifier.weight(1f),
                     )
-                    ActionButton(
+                    StampButton(
                         icon = if (mark.reaction == Reaction.DISLIKE) Icons.Filled.ThumbDown else Icons.Outlined.ThumbDown,
                         label = "Не моё",
                         selected = mark.reaction == Reaction.DISLIKE,
+                        color = Brand.MatchLow,
                         onClick = { onReact(Reaction.DISLIKE) },
+                        modifier = Modifier.weight(1f),
                     )
-                    ActionButton(
+                    StampButton(
                         icon = if (mark.inWatchlist) Icons.Filled.Bookmark else Icons.Filled.BookmarkBorder,
-                        label = "Хочу посмотреть",
+                        label = "В список",
                         selected = mark.inWatchlist,
+                        color = Brand.Gold,
                         onClick = onWatchlist,
+                        modifier = Modifier.weight(1f),
                     )
                 }
                 details.videos.firstOrNull()?.let { trailer ->
-                    Spacer(Modifier.height(16.dp))
-                    Button(onClick = { onTrailer(trailer.key) }, modifier = Modifier.fillMaxWidth()) {
-                        Icon(Icons.Filled.PlayArrow, null)
-                        Spacer(Modifier.width(6.dp))
-                        val more = details.videos.size - 1
-                        Text(if (more > 0) "Смотреть трейлер · ещё $more" else "Смотреть ${trailer.typeLabel.lowercase()}")
-                    }
+                    Spacer(Modifier.height(12.dp))
+                    val more = details.videos.size - 1
+                    MarqueeButton(
+                        if (more > 0) "Смотреть трейлер · ещё $more" else "Смотреть ${trailer.typeLabel.lowercase()}",
+                        onClick = { onTrailer(trailer.key) },
+                        icon = Icons.Filled.PlayArrow,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
                 }
                 Spacer(Modifier.height(16.dp))
                 ReleaseInfo(details)
-                details.tagline?.let {
-                    Spacer(Modifier.height(16.dp))
-                    Text("«$it»", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium)
+                details.tagline?.let { raw ->
+                    val tagline = raw.trim().trim('«', '»', '"', '“', '”', '„').trim()
+                    if (tagline.isNotEmpty()) {
+                        Spacer(Modifier.height(16.dp))
+                        Row(Modifier.height(IntrinsicSize.Min)) {
+                            Box(Modifier.width(2.dp).fillMaxHeight().background(Brand.Gold))
+                            Spacer(Modifier.width(10.dp))
+                            Text(
+                                "«$tagline»", style = MaterialTheme.typography.bodyMedium,
+                                fontStyle = FontStyle.Italic, fontWeight = FontWeight.Medium,
+                            )
+                        }
+                    }
                 }
                 if (t.overview.isNotBlank()) {
-                    Spacer(Modifier.height(10.dp))
+                    Spacer(Modifier.height(12.dp))
                     Text(t.overview, style = MaterialTheme.typography.bodyMedium)
                 }
                 if (details.directors.isNotEmpty()) {
@@ -280,25 +301,26 @@ private fun DetailsContent(
                         (if (t.type == MediaType.MOVIE) "Режиссёр: " else "Создатели: ") +
                             details.directors.joinToString(", "),
                         style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        color = Brand.TextMuted,
                     )
                 }
             }
         }
         if (details.cast.isNotEmpty()) {
             item {
-                SectionTitle("В ролях")
+                SectionHeader("В ролях", Modifier.offset(y = (-28).dp))
                 LazyRow(
                     contentPadding = PaddingValues(horizontal = 16.dp),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                    modifier = Modifier.offset(y = (-24).dp),
                 ) {
                     items(details.cast, key = { it.id }) { person ->
-                        Column(Modifier.width(76.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                        Column(Modifier.width(72.dp), horizontalAlignment = Alignment.CenterHorizontally) {
                             Box(
-                                Modifier.size(68.dp).clip(CircleShape).background(MaterialTheme.colorScheme.surfaceVariant),
+                                Modifier.width(72.dp).height(90.dp).clip(RoundedCornerShape(6.dp)).background(Brand.TicketHigh),
                                 contentAlignment = Alignment.Center,
                             ) {
-                                Icon(Icons.Filled.Person, null, tint = MaterialTheme.colorScheme.outline)
+                                Icon(Icons.Filled.Person, null, tint = Brand.Perforation)
                                 AsyncImage(
                                     model = Images.profile(person.photoPath),
                                     contentDescription = null,
@@ -306,6 +328,7 @@ private fun DetailsContent(
                                     modifier = Modifier.fillMaxSize(),
                                 )
                             }
+                            Spacer(Modifier.height(4.dp))
                             Text(
                                 person.name, style = MaterialTheme.typography.labelSmall,
                                 textAlign = TextAlign.Center, maxLines = 2,
@@ -313,7 +336,7 @@ private fun DetailsContent(
                             person.character?.takeIf { it.isNotBlank() }?.let {
                                 Text(
                                     it, style = MaterialTheme.typography.labelSmall, maxLines = 1,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.Center,
+                                    color = Brand.TextMuted, textAlign = TextAlign.Center,
                                 )
                             }
                         }
@@ -323,10 +346,11 @@ private fun DetailsContent(
         }
         if (details.similar.isNotEmpty()) {
             item {
-                SectionTitle("Похожее")
+                SectionHeader("Похожее", Modifier.offset(y = (-12).dp))
                 LazyRow(
                     contentPadding = PaddingValues(horizontal = 16.dp),
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    modifier = Modifier.offset(y = (-8).dp),
                 ) {
                     items(details.similar, key = { "${it.type.path}:${it.id}" }) { s ->
                         TitleCard(s, matchOf(s), marks[s.key], onClick = { onOpen(s) }, modifier = Modifier.width(112.dp))
@@ -340,35 +364,7 @@ private fun DetailsContent(
     }
 }
 
-@Composable
-private fun SectionTitle(text: String) {
-    Text(
-        text,
-        style = MaterialTheme.typography.titleMedium,
-        fontWeight = FontWeight.SemiBold,
-        modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 10.dp),
-    )
-}
-
-@Composable
-private fun ActionButton(icon: ImageVector, label: String, selected: Boolean, onClick: () -> Unit) {
-    val color = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
-    Column(
-        Modifier.clip(RoundedCornerShape(12.dp)).clickable(onClick = onClick).padding(8.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
-        Surface(
-            shape = CircleShape,
-            color = if (selected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant,
-            modifier = Modifier.size(52.dp),
-        ) {
-            Box(contentAlignment = Alignment.Center) { Icon(icon, label, tint = color) }
-        }
-        Spacer(Modifier.height(4.dp))
-        Text(label, style = MaterialTheme.typography.labelMedium, color = color)
-    }
-}
-
+/** Даты выхода — отдельный билетик: слева корешок «РЕЛИЗ», справа строки. */
 @Composable
 private fun ReleaseInfo(details: TitleDetails) {
     val today = LocalDate.now()
@@ -394,36 +390,26 @@ private fun ReleaseInfo(details: TitleDetails) {
         }
     }
     if (lines.isEmpty()) return
-    Surface(
-        color = MaterialTheme.colorScheme.surfaceContainer,
-        shape = RoundedCornerShape(12.dp),
-        modifier = Modifier.fillMaxWidth(),
+    val stub = 56.dp
+    Row(
+        Modifier.fillMaxWidth().height(IntrinsicSize.Min)
+            .clip(TicketShape(notchRadius = 6.dp, cornerRadius = 8.dp, notchOffset = stub, vertical = true))
+            .background(Brand.Ticket),
     ) {
-        Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Column(
+            Modifier.width(stub).fillMaxHeight().padding(vertical = 10.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center,
+        ) {
+            Icon(Icons.Filled.Event, null, tint = Brand.Gold, modifier = Modifier.size(18.dp))
+            Spacer(Modifier.height(3.dp))
+            Text("РЕЛИЗ", style = PkType.tiny, color = Brand.TextMuted)
+        }
+        VerticalPerforation(inset = 8.dp)
+        Column(Modifier.weight(1f).padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             lines.forEach { Text(it, style = MaterialTheme.typography.bodySmall) }
         }
     }
-}
-
-private fun metaLine(d: TitleDetails): String {
-    val parts = mutableListOf<String>()
-    d.title.year?.let { parts += it.toString() }
-    if (d.title.type == MediaType.TV) {
-        d.seasons?.let { parts += seasonsText(it) }
-    } else {
-        d.runtimeMinutes?.let { m -> parts += if (m >= 60) "${m / 60} ч ${m % 60} мин" else "$m мин" }
-    }
-    if (d.genres.isNotEmpty()) parts += d.genres.take(3).joinToString(", ")
-    return parts.joinToString(" · ")
-}
-
-private fun seasonsText(n: Int): String {
-    val word = when {
-        n % 10 == 1 && n % 100 != 11 -> "сезон"
-        n % 10 in 2..4 && n % 100 !in 12..14 -> "сезона"
-        else -> "сезонов"
-    }
-    return "$n $word"
 }
 
 private fun statusName(status: String) = when (status) {

@@ -1,5 +1,18 @@
 package com.moviepicker.ui.apikey
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.offset
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.unit.sp
+import com.moviepicker.ui.design.BackButton
+import com.moviepicker.ui.design.Brand
+import com.moviepicker.ui.design.MarqueeButton
+import com.moviepicker.ui.design.Perforation
+import com.moviepicker.ui.design.PkType
+import com.moviepicker.ui.design.ScreenHeader
+import com.moviepicker.ui.design.TextAction
+import com.moviepicker.ui.design.TicketShape
+import com.moviepicker.ui.design.ticketFieldColors
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -103,38 +116,37 @@ fun ApiKeyScreen(onSaved: () -> Unit, onBack: (() -> Unit)? = null) {
     Column(
         Modifier.fillMaxSize().statusBarsPadding().navigationBarsPadding().imePadding()
             .verticalScroll(rememberScrollState())
-            .padding(horizontal = 20.dp, vertical = 12.dp),
+            .padding(bottom = 16.dp),
     ) {
         if (onBack != null) {
-            IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Назад") }
+            BackButton(onBack, Modifier.padding(start = 12.dp, top = 10.dp))
         } else {
-            Spacer(Modifier.height(24.dp))
+            Spacer(Modifier.height(16.dp))
         }
-        Icon(Icons.Filled.Key, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(40.dp))
-        Spacer(Modifier.height(12.dp))
-        Text("Ключ TMDB", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
-        Spacer(Modifier.height(8.dp))
-        Text(
-            "Pickture берёт данные о фильмах из TMDB — крупной открытой базы кино. " +
+        ScreenHeader(
+            "Ключ TMDB",
+            kicker = "Pickture · пропуск в кинозал",
+            subtitle = "Pickture берёт данные о фильмах из TMDB — крупной открытой базы кино. " +
                 "Нужен личный ключ: он бесплатный, а получить его можно за пару минут.",
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
-        Spacer(Modifier.height(20.dp))
+        Spacer(Modifier.height(16.dp))
 
-        Surface(
-            color = MaterialTheme.colorScheme.surfaceContainer,
-            shape = RoundedCornerShape(16.dp),
-            modifier = Modifier.fillMaxWidth(),
+        Column(
+            Modifier.padding(horizontal = 16.dp).fillMaxWidth()
+                .clip(TicketShape(notchRadius = 7.dp, cornerRadius = 10.dp))
+                .background(Brand.Ticket)
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
-            Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                Step(1, "Зарегистрируйтесь на TMDB, если ещё нет аккаунта") {
-                    LinkButton("Регистрация на themoviedb.org") { uriHandler.openUri(TmdbLinks.SIGN_UP) }
-                }
-                Step(2, "Откройте страницу API и создайте ключ (бесплатный план Developer)") {
-                    LinkButton("Открыть страницу ключей TMDB") { uriHandler.openUri(TmdbLinks.API_SETTINGS) }
-                }
-                Step(3, "Скопируйте «API Key» или «API Read Access Token» и вставьте ниже")
+            Step(1, "Зарегистрируйтесь на TMDB, если ещё нет аккаунта") {
+                LinkButton("Регистрация на themoviedb.org") { uriHandler.openUri(TmdbLinks.SIGN_UP) }
             }
+            Perforation(inset = 0.dp)
+            Step(2, "Откройте страницу API и создайте ключ (бесплатный план Developer)") {
+                LinkButton("Открыть страницу ключей TMDB") { uriHandler.openUri(TmdbLinks.API_SETTINGS) }
+            }
+            Perforation(inset = 0.dp)
+            Step(3, "Скопируйте «API Key» или «API Read Access Token» и вставьте ниже")
         }
 
         Spacer(Modifier.height(20.dp))
@@ -157,27 +169,24 @@ fun ApiKeyScreen(onSaved: () -> Unit, onBack: (() -> Unit)? = null) {
             },
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
             keyboardActions = KeyboardActions(onDone = { check() }),
-            modifier = Modifier.fillMaxWidth(),
+            shape = TicketShape(notchRadius = 6.dp, cornerRadius = 8.dp),
+            colors = ticketFieldColors(),
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
         )
         Spacer(Modifier.height(12.dp))
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Button(onClick = ::check, enabled = !checking) {
-                if (checking) {
-                    CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp)
-                    Spacer(Modifier.width(8.dp))
-                }
-                Text("Проверить и сохранить")
-            }
+        Row(Modifier.padding(horizontal = 16.dp), verticalAlignment = Alignment.CenterVertically) {
+            MarqueeButton("Проверить и сохранить", ::check, loading = checking)
             if (offerSaveAnyway) {
-                Spacer(Modifier.width(8.dp))
-                TextButton(onClick = { save(key.trim()) }) { Text("Сохранить без проверки") }
+                Spacer(Modifier.width(4.dp))
+                TextAction("Сохранить без проверки", { save(key.trim()) })
             }
         }
         Spacer(Modifier.height(16.dp))
         Text(
             "Ключ хранится только на этом устройстве и отправляется только в TMDB.",
             style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            color = Brand.TextMuted,
+            modifier = Modifier.padding(horizontal = 16.dp),
         )
     }
 }
@@ -186,10 +195,10 @@ fun ApiKeyScreen(onSaved: () -> Unit, onBack: (() -> Unit)? = null) {
 private fun Step(number: Int, text: String, action: (@Composable () -> Unit)? = null) {
     Row {
         Text(
-            "$number.",
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.width(22.dp),
+            "%02d".format(number),
+            style = PkType.number.copy(fontSize = 15.sp),
+            color = Brand.Gold,
+            modifier = Modifier.width(28.dp),
         )
         Column {
             Text(text, style = MaterialTheme.typography.bodyMedium)
@@ -200,9 +209,5 @@ private fun Step(number: Int, text: String, action: (@Composable () -> Unit)? = 
 
 @Composable
 private fun LinkButton(text: String, onClick: () -> Unit) {
-    TextButton(onClick = onClick, contentPadding = androidx.compose.foundation.layout.PaddingValues(0.dp)) {
-        Text(text)
-        Spacer(Modifier.width(4.dp))
-        Icon(Icons.AutoMirrored.Filled.OpenInNew, null, modifier = Modifier.size(16.dp))
-    }
+    TextAction(text, onClick, modifier = Modifier.offset(x = (-10).dp), trailingIcon = Icons.AutoMirrored.Filled.OpenInNew)
 }

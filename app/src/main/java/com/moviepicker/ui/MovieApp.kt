@@ -13,11 +13,26 @@ import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.CollectionsBookmark
 import androidx.compose.material.icons.filled.NewReleases
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material3.Icon
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
+import androidx.compose.animation.AnimatedContentTransitionScope
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.ExitTransition
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.slideOutVertically
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
+import androidx.compose.ui.unit.dp
+import androidx.navigation.NavBackStackEntry
+import com.moviepicker.ui.design.NavEntry
+import com.moviepicker.ui.design.TicketNavBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -99,17 +114,17 @@ fun MovieApp(startWithOnboarding: Boolean, deepLink: TitleKey?, onDeepLinkHandle
     Scaffold(
         contentWindowInsets = WindowInsets(0),
         bottomBar = {
-            if (showBottomBar) {
-                NavigationBar {
-                    tabs.forEach { tab ->
-                        NavigationBarItem(
-                            selected = route == tab.route,
-                            onClick = { nav.navigateToTab(tab.route) },
-                            icon = { Icon(tab.icon, null) },
-                            label = { Text(tab.label) },
-                        )
-                    }
-                }
+            AnimatedVisibility(
+                visible = showBottomBar,
+                enter = slideInVertically(tween(260)) { it } + fadeIn(tween(200)),
+                exit = slideOutVertically(tween(200)) { it } + fadeOut(tween(160)),
+            ) {
+                TicketNavBar(
+                    items = navEntries,
+                    selected = tabIndex(route),
+                    onSelect = { nav.navigateToTab(tabs[it].route) },
+                    modifier = Modifier.navigationBarsPadding().padding(start = 10.dp, end = 10.dp, top = 4.dp, bottom = 8.dp),
+                )
             }
         },
     ) { padding ->
@@ -117,6 +132,10 @@ fun MovieApp(startWithOnboarding: Boolean, deepLink: TitleKey?, onDeepLinkHandle
             navController = nav,
             startDestination = if (startWithOnboarding) Routes.ONBOARDING else Routes.HOME,
             modifier = Modifier.fillMaxSize().padding(padding).consumeWindowInsets(padding),
+            enterTransition = { enterFor(forward = true) },
+            exitTransition = { exitFor(forward = true) },
+            popEnterTransition = { enterFor(forward = false) },
+            popExitTransition = { exitFor(forward = false) },
         ) {
             composable(Routes.ONBOARDING) {
                 OnboardingScreen(edit = false, onDone = {
@@ -186,6 +205,48 @@ fun MovieApp(startWithOnboarding: Boolean, deepLink: TitleKey?, onDeepLinkHandle
                 TrailerScreen(TitleKey(type, id), video, onBack = { nav.popBackStack() })
             }
         }
+    }
+}
+
+private val navEntries = tabs.map { NavEntry(it.label, it.icon) }
+
+private fun tabIndex(route: String?) = tabs.indexOfFirst { it.route == route }
+
+private const val SWITCH_MS = 340
+
+/**
+ * Переходы между экранами. Вкладки «перематываются» как плёнка — новая выезжает с той стороны,
+ * где стоит её вкладка, слегка увеличиваясь; вложенные экраны (фильм, раздел, настройки)
+ * поднимаются снизу, как билет из кассы, и уезжают вниз при возврате.
+ */
+private fun AnimatedContentTransitionScope<NavBackStackEntry>.tabDirection(): Int? {
+    val from = tabIndex(initialState.destination.route)
+    val to = tabIndex(targetState.destination.route)
+    if (from < 0 || to < 0 || from == to) return null
+    return if (to > from) 1 else -1
+}
+
+private fun AnimatedContentTransitionScope<NavBackStackEntry>.enterFor(forward: Boolean): EnterTransition {
+    val dir = tabDirection()
+    val easing = FastOutSlowInEasing
+    return when {
+        dir != null -> slideInHorizontally(tween(SWITCH_MS, easing = easing)) { it * dir / 3 } +
+            fadeIn(tween(SWITCH_MS - 60, delayMillis = 40)) +
+            scaleIn(tween(SWITCH_MS, easing = easing), initialScale = 0.94f)
+        forward -> slideInVertically(tween(320, easing = easing)) { it / 8 } + fadeIn(tween(260))
+        else -> fadeIn(tween(260)) + scaleIn(tween(300, easing = easing), initialScale = 0.96f)
+    }
+}
+
+private fun AnimatedContentTransitionScope<NavBackStackEntry>.exitFor(forward: Boolean): ExitTransition {
+    val dir = tabDirection()
+    val easing = FastOutSlowInEasing
+    return when {
+        dir != null -> slideOutHorizontally(tween(SWITCH_MS, easing = easing)) { -it * dir / 3 } +
+            fadeOut(tween(SWITCH_MS - 120)) +
+            scaleOut(tween(SWITCH_MS, easing = easing), targetScale = 0.94f)
+        forward -> fadeOut(tween(220)) + scaleOut(tween(300, easing = easing), targetScale = 0.96f)
+        else -> slideOutVertically(tween(280, easing = easing)) { it / 8 } + fadeOut(tween(220))
     }
 }
 

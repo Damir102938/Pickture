@@ -1,5 +1,22 @@
 package com.moviepicker.desktop.ui
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.offset
+import androidx.compose.material3.SwitchDefaults
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.unit.sp
+import com.moviepicker.desktop.ui.design.BackButton
+import com.moviepicker.desktop.ui.design.Brand
+import com.moviepicker.desktop.ui.design.MarqueeButton
+import com.moviepicker.desktop.ui.design.Perforation
+import com.moviepicker.desktop.ui.design.PkType
+import com.moviepicker.desktop.ui.design.ScreenHeader
+import com.moviepicker.desktop.ui.design.SeatTag
+import com.moviepicker.desktop.ui.design.TextAction
+import com.moviepicker.desktop.ui.design.TicketDialog
+import com.moviepicker.desktop.ui.design.TicketOutlineButton
+import com.moviepicker.desktop.ui.design.TicketShape
+import com.moviepicker.desktop.ui.design.ticketFieldColors
 import androidx.compose.foundation.VerticalScrollbar
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -80,20 +97,20 @@ fun SettingsScreen(c: DesktopContainer, nav: Navigator) {
 
     Box(Modifier.fillMaxSize()) {
         Column(Modifier.fillMaxSize().verticalScroll(scroll).padding(32.dp).widthIn(max = 760.dp)) {
-            Text("Настройки", style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.Bold)
-
-            Header("Ключ TMDB")
+            ScreenHeader("Настройки", kicker = "Pickture · будка киномеханика")
+            Spacer(Modifier.height(12.dp))
+            Header(1, "Ключ TMDB")
             val key = settings.tmdbApiKey
             Text(if (key.isBlank()) "Ключ не задан" else "Сохранён ключ ${key.take(4)}…${key.takeLast(4)}")
             Spacer(Modifier.height(8.dp))
-            OutlinedButton(onClick = { nav.open(Screen.ApiKey) }) { Text("Изменить ключ") }
+            TicketOutlineButton("Изменить ключ", { nav.open(Screen.ApiKey) })
 
             Divider()
-            Header("Вкус")
+            Header(2, "Вкус")
             val genreNames = Genres.selectable.filter { it.movieId in settings.favoriteGenres }.map { it.name }
             Text("Любимые жанры: " + if (genreNames.isEmpty()) "не выбраны" else genreNames.joinToString(", "))
             Spacer(Modifier.height(8.dp))
-            OutlinedButton(onClick = { nav.open(Screen.Genres) }) { Text("Выбрать любимые жанры") }
+            TicketOutlineButton("Выбрать любимые жанры", { nav.open(Screen.Genres) })
             Spacer(Modifier.height(8.dp))
             SwitchRow(
                 "Учитывать любимые жанры и стартовые оценки",
@@ -102,16 +119,16 @@ fun SettingsScreen(c: DesktopContainer, nav: Navigator) {
             ) { scope.launch { c.settings.setUseOnboarding(it) } }
 
             Divider()
-            Header("Резервная копия")
+            Header(3, "Резервная копия")
             Text(
                 "Файл совместим с Android-версией: можно перенести оценки с телефона на компьютер и обратно.",
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             Spacer(Modifier.height(8.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                OutlinedButton(onClick = {
+                TicketOutlineButton("Сохранить в файл", onClick = {
                     val file = chooseFile("Сохранить резервную копию", FileDialog.SAVE, c.backup.suggestedFileName())
-                        ?: return@OutlinedButton
+                        ?: return@TicketOutlineButton
                     scope.launch {
                         message = runCatching {
                             val (json, count) = c.backup.exportJson()
@@ -119,9 +136,9 @@ fun SettingsScreen(c: DesktopContainer, nav: Navigator) {
                             "Сохранено: $count фильмов и сериалов"
                         }.getOrElse { "Не удалось сохранить: ${it.message}" }
                     }
-                }) { Text("Сохранить в файл") }
-                OutlinedButton(onClick = {
-                    val file = chooseFile("Восстановить из резервной копии", FileDialog.LOAD, null) ?: return@OutlinedButton
+                })
+                TicketOutlineButton("Восстановить", onClick = {
+                    val file = chooseFile("Восстановить из резервной копии", FileDialog.LOAD, null) ?: return@TicketOutlineButton
                     scope.launch {
                         message = runCatching {
                             val text = withContext(Dispatchers.IO) { file.readText() }
@@ -129,15 +146,15 @@ fun SettingsScreen(c: DesktopContainer, nav: Navigator) {
                             "Восстановлено: ${result.applied} из ${result.total}"
                         }.getOrElse { if (it is BackupException) it.message else "Не удалось прочитать файл" }
                     }
-                }) { Text("Восстановить") }
+                })
             }
 
             Divider()
-            Header("Обновления")
+            Header(4, "Обновления")
             Text("Версия ${BuildInfo.VERSION}. При запуске Pickture проверяет новые версии на GitHub.")
             Spacer(Modifier.height(8.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                OutlinedButton(enabled = !checkingUpdate, onClick = {
+                TicketOutlineButton("Проверить обновления", enabled = !checkingUpdate, onClick = {
                     checkingUpdate = true
                     scope.launch {
                         message = runCatching { c.updates.check(BuildInfo.VERSION) }.fold(
@@ -152,15 +169,15 @@ fun SettingsScreen(c: DesktopContainer, nav: Navigator) {
                         )
                         checkingUpdate = false
                     }
-                }) { Text("Проверить обновления") }
-                TextButton(onClick = { openUrl(UpdateChecker.RELEASES_PAGE) }) { Text("Страница релизов") }
+                })
+                TextAction("Страница релизов", { openUrl(UpdateChecker.RELEASES_PAGE) })
             }
 
             Divider()
-            Header("Данные")
+            Header(5, "Данные")
             Text("Папка с данными: ${c.dataDir.absolutePath}", color = MaterialTheme.colorScheme.onSurfaceVariant)
             Spacer(Modifier.height(8.dp))
-            OutlinedButton(onClick = { confirmReset = true }) { Text("Сбросить все оценки и списки") }
+            TicketOutlineButton("Сбросить все оценки и списки", { confirmReset = true }, color = MaterialTheme.colorScheme.error)
 
             Divider()
             Text(
@@ -174,28 +191,27 @@ fun SettingsScreen(c: DesktopContainer, nav: Navigator) {
     }
 
     message?.let { text ->
-        AlertDialog(
-            onDismissRequest = { message = null },
-            text = { Text(text) },
-            confirmButton = { TextButton(onClick = { message = null }) { Text("ОК") } },
-        )
+        TicketDialog(
+            title = "Pickture",
+            onDismiss = { message = null },
+            confirm = { TextAction("ОК", { message = null }, color = Brand.Gold) },
+        ) { Text(text) }
     }
     if (confirmReset) {
-        AlertDialog(
-            onDismissRequest = { confirmReset = false },
-            title = { Text("Сбросить всё?") },
-            text = { Text("Удалятся все лайки, дизлайки и список «Хочу посмотреть». Отменить нельзя.") },
-            confirmButton = {
-                TextButton(onClick = {
+        TicketDialog(
+            title = "Сбросить всё?",
+            onDismiss = { confirmReset = false },
+            confirm = {
+                TextAction("Сбросить", color = MaterialTheme.colorScheme.error, onClick = {
                     confirmReset = false
                     scope.launch {
                         c.repository.clearAll()
                         c.recommendations.invalidate()
                     }
-                }) { Text("Сбросить") }
+                })
             },
-            dismissButton = { TextButton(onClick = { confirmReset = false }) { Text("Отмена") } },
-        )
+            dismiss = { TextAction("Отмена", { confirmReset = false }, color = Brand.TextMuted) },
+        ) { Text("Удалятся все лайки, дизлайки и список «Хочу посмотреть». Отменить нельзя.") }
     }
 }
 
@@ -208,15 +224,16 @@ private fun chooseFile(title: String, mode: Int, suggestedName: String?): File? 
 }
 
 @Composable
-private fun Header(text: String) {
-    Text(
-        text, style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary,
-        modifier = Modifier.padding(top = 8.dp, bottom = 8.dp),
-    )
+private fun Header(number: Int, text: String) {
+    Row(Modifier.padding(top = 4.dp, bottom = 10.dp), verticalAlignment = Alignment.CenterVertically) {
+        Text("%02d".format(number), style = PkType.number, color = Brand.Accent)
+        Spacer(Modifier.width(8.dp))
+        Text(text.uppercase(), style = PkType.section, color = Brand.Text)
+    }
 }
 
 @Composable
-private fun Divider() = HorizontalDivider(Modifier.padding(vertical = 20.dp))
+private fun Divider() = Perforation(Modifier.padding(vertical = 22.dp))
 
 @Composable
 private fun SwitchRow(title: String, description: String, checked: Boolean, onChange: (Boolean) -> Unit) {
@@ -226,7 +243,17 @@ private fun SwitchRow(title: String, description: String, checked: Boolean, onCh
             Text(description, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
         Spacer(Modifier.width(12.dp))
-        Switch(checked = checked, onCheckedChange = onChange)
+        Switch(
+            checked = checked,
+            onCheckedChange = onChange,
+            colors = SwitchDefaults.colors(
+                checkedTrackColor = Brand.Gold,
+                checkedThumbColor = Brand.OnGold,
+                uncheckedTrackColor = Brand.Ticket,
+                uncheckedBorderColor = Brand.Perforation,
+                uncheckedThumbColor = Brand.TextMuted,
+            ),
+        )
     }
 }
 
@@ -273,27 +300,27 @@ fun ApiKeyScreen(c: DesktopContainer, onSaved: () -> Unit, onBack: (() -> Unit)?
 
     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.TopCenter) {
         Column(Modifier.widthIn(max = 640.dp).padding(32.dp).verticalScroll(rememberScrollState())) {
-            if (onBack != null) IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Назад") }
-            Icon(Icons.Filled.Key, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(44.dp))
-            Spacer(Modifier.height(12.dp))
-            Text("Ключ TMDB", style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.Bold)
-            Spacer(Modifier.height(8.dp))
-            Text(
-                "Pickture берёт данные о фильмах из TMDB — крупной открытой базы кино. " +
+            if (onBack != null) BackButton(onBack)
+            ScreenHeader(
+                "Ключ TMDB",
+                kicker = "Pickture · пропуск в кинозал",
+                subtitle = "Pickture берёт данные о фильмах из TMDB — крупной открытой базы кино. " +
                     "Нужен личный ключ: он бесплатный, а получить его можно за пару минут.",
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             Spacer(Modifier.height(20.dp))
-            Surface(color = MaterialTheme.colorScheme.surfaceContainer, shape = RoundedCornerShape(16.dp), modifier = Modifier.fillMaxWidth()) {
-                Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    Step(1, "Зарегистрируйтесь на TMDB, если ещё нет аккаунта") {
-                        Link("Регистрация на themoviedb.org") { openUrl(TmdbLinks.SIGN_UP) }
-                    }
-                    Step(2, "Откройте страницу API и создайте ключ (бесплатный план Developer)") {
-                        Link("Открыть страницу ключей TMDB") { openUrl(TmdbLinks.API_SETTINGS) }
-                    }
-                    Step(3, "Скопируйте «API Key» или «API Read Access Token» и вставьте ниже")
+            Column(
+                Modifier.fillMaxWidth().clip(TicketShape(notchRadius = 7.dp, cornerRadius = 10.dp)).background(Brand.Ticket).padding(18.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp),
+            ) {
+                Step(1, "Зарегистрируйтесь на TMDB, если ещё нет аккаунта") {
+                    Link("Регистрация на themoviedb.org") { openUrl(TmdbLinks.SIGN_UP) }
                 }
+                Perforation()
+                Step(2, "Откройте страницу API и создайте ключ (бесплатный план Developer)") {
+                    Link("Открыть страницу ключей TMDB") { openUrl(TmdbLinks.API_SETTINGS) }
+                }
+                Perforation()
+                Step(3, "Скопируйте «API Key» или «API Read Access Token» и вставьте ниже")
             }
             Spacer(Modifier.height(20.dp))
             OutlinedTextField(
@@ -312,20 +339,16 @@ fun ApiKeyScreen(c: DesktopContainer, onSaved: () -> Unit, onBack: (() -> Unit)?
                         Icon(Icons.Filled.ContentPaste, "Вставить из буфера")
                     }
                 },
+                shape = TicketShape(notchRadius = 6.dp, cornerRadius = 8.dp),
+                colors = ticketFieldColors(),
                 modifier = Modifier.fillMaxWidth(),
             )
             Spacer(Modifier.height(12.dp))
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Button(onClick = ::check, enabled = !checking) {
-                    if (checking) {
-                        CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp)
-                        Spacer(Modifier.width(8.dp))
-                    }
-                    Text("Проверить и сохранить")
-                }
+                MarqueeButton("Проверить и сохранить", ::check, loading = checking)
                 if (offerSaveAnyway) {
                     Spacer(Modifier.width(8.dp))
-                    TextButton(onClick = { save(key.trim()) }) { Text("Сохранить без проверки") }
+                    TextAction("Сохранить без проверки", { save(key.trim()) })
                 }
             }
             Spacer(Modifier.height(16.dp))
@@ -341,7 +364,7 @@ fun ApiKeyScreen(c: DesktopContainer, onSaved: () -> Unit, onBack: (() -> Unit)?
 @Composable
 private fun Step(number: Int, text: String, action: (@Composable () -> Unit)? = null) {
     Row {
-        Text("$number.", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary, modifier = Modifier.width(24.dp))
+        Text("%02d".format(number), style = PkType.number.copy(fontSize = 16.sp), color = Brand.Gold, modifier = Modifier.width(32.dp))
         Column {
             Text(text)
             action?.invoke()
@@ -351,11 +374,7 @@ private fun Step(number: Int, text: String, action: (@Composable () -> Unit)? = 
 
 @Composable
 private fun Link(text: String, onClick: () -> Unit) {
-    TextButton(onClick = onClick, contentPadding = androidx.compose.foundation.layout.PaddingValues(0.dp)) {
-        Text(text)
-        Spacer(Modifier.width(4.dp))
-        Icon(Icons.AutoMirrored.Filled.OpenInNew, null, modifier = Modifier.size(16.dp))
-    }
+    TextAction(text, onClick, modifier = Modifier.offset(x = (-10).dp), trailingIcon = Icons.AutoMirrored.Filled.OpenInNew)
 }
 
 // ---------- Любимые жанры (стартовый экран на ПК) ----------
@@ -375,29 +394,28 @@ fun GenresScreen(c: DesktopContainer, firstRun: Boolean, onDone: () -> Unit) {
 
     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.TopCenter) {
         Column(Modifier.widthIn(max = 760.dp).padding(40.dp)) {
-            Text("Что вы любите смотреть?", style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.Bold)
-            Spacer(Modifier.height(8.dp))
-            Text(
-                "Выберите жанры, и рекомендации появятся сразу. Дальше ставьте лайки фильмам — подборка станет точнее. " +
+            ScreenHeader(
+                "Что вы любите смотреть?",
+                kicker = "Pickture · выбор жанров",
+                subtitle = "Выберите жанры, и рекомендации появятся сразу. Дальше ставьте лайки фильмам — подборка станет точнее. " +
                     "Выбор можно изменить в настройках.",
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             Spacer(Modifier.height(24.dp))
             FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Genres.selectable.forEach { g ->
-                    FilterChip(
+                    SeatTag(
+                        g.name,
                         selected = g.movieId in selected,
                         onClick = { selected = if (g.movieId in selected) selected - g.movieId else selected + g.movieId },
-                        label = { Text(g.name) },
                     )
                 }
             }
             Spacer(Modifier.height(32.dp))
             Row(verticalAlignment = Alignment.CenterVertically) {
-                if (firstRun) TextButton(onClick = { finish(emptySet()) }) { Text("Пропустить") }
-                else TextButton(onClick = onDone) { Text("Отмена") }
+                if (firstRun) TextAction("Пропустить", { finish(emptySet()) }, color = Brand.TextMuted)
+                else TextAction("Отмена", onDone, color = Brand.TextMuted)
                 Spacer(Modifier.weight(1f))
-                Button(onClick = { finish(selected) }) { Text("Готово") }
+                MarqueeButton(if (selected.isEmpty()) "Готово" else "Готово · ${selected.size}", { finish(selected) })
             }
         }
     }

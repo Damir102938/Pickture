@@ -14,10 +14,10 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -39,6 +39,9 @@ import com.moviepicker.ui.common.LoadingBox
 import com.moviepicker.ui.common.TitleCard
 import com.moviepicker.ui.common.appViewModel
 import com.moviepicker.ui.common.userMessage
+import com.moviepicker.ui.design.ScreenHeader
+import com.moviepicker.ui.design.SectionHeader
+import com.moviepicker.ui.design.TextAction
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -119,20 +122,16 @@ fun HomeScreen(onOpen: (Title) -> Unit, onSection: (FeedSection) -> Unit) {
             ErrorBox((rows.values.first() as LoadState.Error).message, onRetry = { vm.load(false) })
             return@PullToRefreshBox
         }
-        LazyColumn(contentPadding = PaddingValues(bottom = 24.dp)) {
+        // Разделы нумеруются по порядку, как сеансы в афише
+        val offset = if (forYou.isNotEmpty()) 1 else 0
+        LazyColumn(contentPadding = PaddingValues(bottom = 20.dp)) {
             item {
-                Column(Modifier.padding(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 4.dp)) {
-                    Text("Что нового", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
-                    Text(
-                        "Свежие релизы, сериалы и анонсы",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
+                ScreenHeader("Что нового", subtitle = "Свежие релизы, сериалы и анонсы")
             }
             if (forYou.isNotEmpty()) {
                 item {
                     TitleRow(
+                        number = 1,
                         title = "Новинки для вас",
                         subtitle = "Свежее, что совпадает с вашим вкусом",
                         state = LoadState.Success(forYou),
@@ -144,8 +143,9 @@ fun HomeScreen(onOpen: (Title) -> Unit, onSection: (FeedSection) -> Unit) {
                     )
                 }
             }
-            items(vm.sections, key = { it.name }) { section ->
+            itemsIndexed(vm.sections, key = { _, s -> s.name }) { index, section ->
                 TitleRow(
+                    number = index + 1 + offset,
                     title = section.title,
                     subtitle = section.subtitle,
                     state = rows[section] ?: LoadState.Loading,
@@ -162,6 +162,7 @@ fun HomeScreen(onOpen: (Title) -> Unit, onSection: (FeedSection) -> Unit) {
 
 @Composable
 private fun TitleRow(
+    number: Int,
     title: String,
     subtitle: String,
     state: LoadState<List<Title>>,
@@ -171,26 +172,13 @@ private fun TitleRow(
     onAll: (() -> Unit)?,
     onRetry: () -> Unit,
 ) {
-    Column(Modifier.padding(top = 20.dp)) {
-        Row(
-            Modifier.fillMaxWidth().padding(start = 16.dp, end = 4.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Column(Modifier.weight(1f)) {
-                Text(title, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold)
-                Text(
-                    subtitle,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-            if (onAll != null) TextButton(onClick = onAll) { Text("Все") }
-        }
-        Spacer(Modifier.height(10.dp))
+    Column(Modifier.padding(top = 14.dp)) {
+        SectionHeader(title, number = number, subtitle = subtitle, onAll = onAll)
+        Spacer(Modifier.height(6.dp))
         when (state) {
-            LoadState.Loading -> LoadingBox(height = 230.dp)
+            LoadState.Loading -> LoadingBox(height = 220.dp)
             is LoadState.Error -> Row(
-                Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+                Modifier.fillMaxWidth().padding(start = 16.dp, end = 6.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(
@@ -199,7 +187,7 @@ private fun TitleRow(
                     color = MaterialTheme.colorScheme.error,
                     modifier = Modifier.weight(1f),
                 )
-                TextButton(onClick = onRetry) { Text("Повторить") }
+                TextAction("Повторить", onRetry)
             }
             is LoadState.Success -> if (state.data.isEmpty()) {
                 Text(
@@ -213,7 +201,7 @@ private fun TitleRow(
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
                     items(state.data, key = { "${it.type.path}:${it.id}" }) { t ->
-                        TitleCard(t, matchOf(t), marks[t.key], onClick = { onOpen(t) }, modifier = Modifier.width(124.dp))
+                        TitleCard(t, matchOf(t), marks[t.key], onClick = { onOpen(t) }, modifier = Modifier.width(118.dp))
                     }
                 }
             }

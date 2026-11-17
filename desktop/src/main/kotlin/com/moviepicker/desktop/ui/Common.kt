@@ -1,5 +1,14 @@
 package com.moviepicker.desktop.ui
 
+import androidx.compose.material3.Shapes
+import androidx.compose.ui.graphics.Shape
+import com.moviepicker.desktop.ui.design.Brand
+import com.moviepicker.desktop.ui.design.MarqueeButton
+import com.moviepicker.desktop.ui.design.MarqueeLoader
+import com.moviepicker.desktop.ui.design.Perforation
+import com.moviepicker.desktop.ui.design.PkType
+import com.moviepicker.desktop.ui.design.TicketShape
+import com.moviepicker.desktop.ui.design.pressClickable
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -56,13 +65,13 @@ import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 
-// ---------- Тема (та же палитра индиго, что на Android) ----------
+// ---------- Тема (та же палитра «Афиши», что на Android) ----------
 
-val Accent = Color(0xFF8C96FF)
-val Gold = Color(0xFFFFC857)
-val MatchHigh = Color(0xFF4CD08A)
-val MatchMid = Color(0xFFFFB547)
-val MatchLow = Color(0xFF9A9CB8)
+val Accent = Brand.Accent
+val Gold = Brand.Gold
+val MatchHigh = Brand.MatchHigh
+val MatchMid = Brand.MatchMid
+val MatchLow = Brand.MatchLow
 
 val PicktureColors = darkColorScheme(
     primary = Accent,
@@ -73,18 +82,29 @@ val PicktureColors = darkColorScheme(
     onSecondary = Color(0xFF1C2160),
     secondaryContainer = Color(0xFF2E3590),
     onSecondaryContainer = Color(0xFFDDE0FF),
-    background = Color(0xFF0F1020),
-    onBackground = Color(0xFFE6E7F5),
-    surface = Color(0xFF0F1020),
-    onSurface = Color(0xFFE6E7F5),
-    surfaceVariant = Color(0xFF23253A),
+    tertiary = Gold,
+    onTertiary = Brand.OnGold,
+    background = Brand.Background,
+    onBackground = Brand.Text,
+    surface = Brand.Background,
+    onSurface = Brand.Text,
+    surfaceVariant = Brand.TicketHigh,
     onSurfaceVariant = Color(0xFFB4B7CF),
     surfaceContainerLow = Color(0xFF14152A),
-    surfaceContainer = Color(0xFF181A2C),
-    surfaceContainerHigh = Color(0xFF23253A),
+    surfaceContainer = Brand.Ticket,
+    surfaceContainerHigh = Brand.TicketHigh,
     surfaceContainerHighest = Color(0xFF2D3048),
     outline = Color(0xFF5A5D78),
-    outlineVariant = Color(0xFF34374D),
+    outlineVariant = Brand.Perforation,
+)
+
+/** Острые, «билетные» скругления вместо мягких материаловских. */
+val PicktureShapes = Shapes(
+    extraSmall = RoundedCornerShape(4.dp),
+    small = RoundedCornerShape(6.dp),
+    medium = RoundedCornerShape(8.dp),
+    large = RoundedCornerShape(10.dp),
+    extraLarge = RoundedCornerShape(14.dp),
 )
 
 // ---------- Утилиты ----------
@@ -126,22 +146,25 @@ fun Title.subtitle(): String {
     return if (type == MediaType.TV) "$datePart · сериал" else datePart
 }
 
-fun matchColor(match: Int): Color = when {
-    match >= 75 -> MatchHigh
-    match >= 55 -> MatchMid
-    else -> MatchLow
-}
+fun matchColor(match: Int): Color = Brand.match(match)
 
 // ---------- Компоненты ----------
 
+/** Постер. [ratio] = null — без фиксированных пропорций (размер задаёт [modifier]). */
 @Composable
-fun Poster(path: String?, modifier: Modifier = Modifier, size: String = "w342") {
+fun Poster(
+    path: String?,
+    modifier: Modifier = Modifier,
+    size: String = "w342",
+    shape: Shape = RoundedCornerShape(6.dp),
+    ratio: Float? = 2f / 3f,
+) {
     Box(
-        modifier.aspectRatio(2f / 3f).clip(RoundedCornerShape(12.dp))
-            .background(MaterialTheme.colorScheme.surfaceVariant),
+        modifier.then(if (ratio != null) Modifier.aspectRatio(ratio) else Modifier).clip(shape)
+            .background(Brand.TicketHigh),
         contentAlignment = Alignment.Center,
     ) {
-        Icon(Icons.Filled.Movie, null, tint = MaterialTheme.colorScheme.outline, modifier = Modifier.size(40.dp))
+        Icon(Icons.Filled.Movie, null, tint = Brand.Perforation, modifier = Modifier.size(40.dp))
         AsyncImage(
             model = Images.poster(path, size),
             contentDescription = null,
@@ -151,47 +174,48 @@ fun Poster(path: String?, modifier: Modifier = Modifier, size: String = "w342") 
     }
 }
 
-@Composable
-fun Badge(text: String, color: Color, modifier: Modifier = Modifier, icon: ImageVector? = null) {
-    Row(
-        modifier.clip(RoundedCornerShape(6.dp)).background(Color.Black.copy(alpha = 0.72f))
-            .padding(horizontal = 6.dp, vertical = 2.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        if (icon != null) {
-            Icon(icon, null, tint = color, modifier = Modifier.size(12.dp))
-            Spacer(Modifier.width(2.dp))
-        }
-        Text(text, color = color, fontSize = 12.sp, fontWeight = FontWeight.Bold)
-    }
-}
-
+/** Отметка пользователя на постере — маленький штамп в углу. */
 @Composable
 fun MarkIcon(mark: UserMark?, modifier: Modifier = Modifier) {
     val (icon, tint) = when {
         mark == null -> return
-        mark.reaction == Reaction.LIKE -> Icons.Filled.Favorite to MaterialTheme.colorScheme.primary
-        mark.reaction == Reaction.DISLIKE -> Icons.Filled.ThumbDown to MatchLow
-        mark.inWatchlist -> Icons.Filled.Bookmark to Gold
+        mark.reaction == Reaction.LIKE -> Icons.Filled.Favorite to Brand.Accent
+        mark.reaction == Reaction.DISLIKE -> Icons.Filled.ThumbDown to Brand.MatchLow
+        mark.inWatchlist -> Icons.Filled.Bookmark to Brand.Gold
         else -> return
     }
     Box(
-        modifier.size(26.dp).clip(CircleShape).background(Color.Black.copy(alpha = 0.72f)),
+        modifier.size(26.dp).clip(RoundedCornerShape(4.dp)).background(Color.Black.copy(alpha = 0.72f)),
         contentAlignment = Alignment.Center,
     ) { Icon(icon, null, tint = tint, modifier = Modifier.size(15.dp)) }
 }
 
+private val StubHeight = 28.dp
+
+/** Карточка-билет: постер, линия отрыва и корешок с процентом совпадения и рейтингом TMDB. */
 @Composable
 fun TitleCard(title: Title, match: Int?, mark: UserMark?, onClick: () -> Unit, modifier: Modifier = Modifier) {
-    Column(modifier.clip(RoundedCornerShape(12.dp)).clickable(onClick = onClick)) {
-        Box {
-            Poster(title.posterPath, Modifier.fillMaxWidth())
-            if (title.voteCount >= 5 && title.rating > 0) {
-                Badge("%.1f".format(title.rating), Gold, Modifier.align(Alignment.TopStart).padding(8.dp), Icons.Filled.Star)
+    Column(modifier.pressClickable(onClick = onClick)) {
+        Column(
+            Modifier.fillMaxWidth()
+                .clip(TicketShape(notchRadius = 6.dp, cornerRadius = 8.dp, notchOffset = StubHeight, fromEnd = true))
+                .background(Brand.Ticket),
+        ) {
+            Box {
+                Poster(title.posterPath, Modifier.fillMaxWidth(), shape = RoundedCornerShape(0.dp))
+                MarkIcon(mark, Modifier.align(Alignment.TopEnd).padding(8.dp))
             }
-            MarkIcon(mark, Modifier.align(Alignment.TopEnd).padding(8.dp))
-            if (match != null) {
-                Badge("$match%", matchColor(match), Modifier.align(Alignment.BottomStart).padding(8.dp))
+            Perforation(inset = 7.dp)
+            Row(
+                Modifier.fillMaxWidth().height(StubHeight).padding(horizontal = 10.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                if (match != null) Text("$match%", style = PkType.number, color = matchColor(match))
+                else Text(if (title.type == MediaType.TV) "СЕРИАЛ" else "ФИЛЬМ", style = PkType.tiny, color = Brand.TextMuted)
+                Spacer(Modifier.weight(1f))
+                if (title.voteCount >= 5 && title.rating > 0) {
+                    Text("★ %.1f".format(title.rating), style = PkType.number, color = Brand.Gold)
+                }
             }
         }
         Spacer(Modifier.height(8.dp))
@@ -199,7 +223,7 @@ fun TitleCard(title: Title, match: Int?, mark: UserMark?, onClick: () -> Unit, m
             title.name, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium,
             maxLines = 2, overflow = TextOverflow.Ellipsis,
         )
-        Text(title.subtitle(), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text(title.subtitle(), style = MaterialTheme.typography.bodySmall, color = Brand.TextMuted)
     }
 }
 
@@ -225,7 +249,7 @@ fun LoadingBox(modifier: Modifier = Modifier, height: Dp? = null) {
     Box(
         if (height != null) modifier.fillMaxWidth().height(height) else modifier.fillMaxSize(),
         contentAlignment = Alignment.Center,
-    ) { CircularProgressIndicator() }
+    ) { MarqueeLoader() }
 }
 
 @Composable
@@ -240,14 +264,16 @@ fun MessageBox(
         modifier.fillMaxWidth().padding(40.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Text(title, style = MaterialTheme.typography.titleLarge, textAlign = TextAlign.Center)
+        Text(title.uppercase(), style = PkType.section, color = Brand.Text, textAlign = TextAlign.Center)
+        Spacer(Modifier.height(10.dp))
+        Perforation(Modifier.width(72.dp), color = Brand.Gold)
         if (text != null) {
-            Spacer(Modifier.height(8.dp))
-            Text(text, textAlign = TextAlign.Center, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Spacer(Modifier.height(10.dp))
+            Text(text, textAlign = TextAlign.Center, color = Brand.TextMuted)
         }
         if (actionLabel != null && onAction != null) {
-            Spacer(Modifier.height(16.dp))
-            Button(onClick = onAction) { Text(actionLabel) }
+            Spacer(Modifier.height(18.dp))
+            MarqueeButton(actionLabel, onAction)
         }
     }
 }
