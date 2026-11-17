@@ -3,6 +3,7 @@ import { type UserTitleEntity, entityToTitle } from '../core/entities'
 import { markOf, useApp } from '../data/store'
 import { MessageBox, ScreenHeader, SectionHeader, TicketToggle, TitleGrid } from '../ui/components'
 import { Icon, type IconName } from '../ui/icons'
+import { useDesktop } from '../ui/layout'
 import { push } from '../ui/nav'
 import { useScrollToTop } from './shared'
 
@@ -33,6 +34,7 @@ export function LibraryScreen() {
   const [tab, setTab] = useState(0)
   const [prev, setPrev] = useState(0)
   const scroll = useRef<HTMLDivElement>(null)
+  const desktop = useDesktop()
   useScrollToTop(scroll, 'library')
 
   const entities = useMemo(() => [...titles.values()].sort((a, b) => b.updatedAt - a.updatedAt), [titles])
@@ -45,7 +47,7 @@ export function LibraryScreen() {
       <ScreenHeader
         title="Мои списки"
         trailing={
-          <button class="icon-square press" aria-label="Настройки" onClick={() => push({ name: 'settings' })}>
+          !desktop && <button class="icon-square press" aria-label="Настройки" onClick={() => push({ name: 'settings' })}>
             <Icon name="settings" size={20} />
           </button>
         }

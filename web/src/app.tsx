@@ -1,4 +1,4 @@
-import { useRef, useState } from 'preact/hooks'
+import { useEffect, useRef, useState } from 'preact/hooks'
 import { useApp } from './data/store'
 import { isIos, isStandalone, updateApp, useUpdateAvailable } from './pwa'
 import { ApiKeyScreen } from './screens/ApiKey'
@@ -14,13 +14,37 @@ import { TrailerScreen } from './screens/Trailer'
 import { MarqueeLoader, TextAction, ToastHost } from './ui/components'
 import { useSwipeBack } from './ui/gestures'
 import { Icon, type IconName } from './ui/icons'
-import { type StackEntry, TABS, type Tab, back, selectTab, useNav } from './ui/nav'
+import { useDesktop } from './ui/layout'
+import { DESKTOP_TABS, type StackEntry, TABS, type Tab, back, selectTab, useNav } from './ui/nav'
 
 const TAB_INFO: Record<Tab, { label: string; icon: IconName }> = {
   home: { label: 'Новинки', icon: 'newReleases' },
   recs: { label: 'Для вас', icon: 'autoAwesome' },
   search: { label: 'Поиск', icon: 'search' },
   library: { label: 'Мои', icon: 'collections' },
+  settings: { label: 'Настройки', icon: 'settings' },
+}
+
+function TabContent({ tab }: { tab: Tab }) {
+  switch (tab) {
+    case 'home':
+      return <HomeScreen />
+    case 'recs':
+      return <RecsScreen />
+    case 'search':
+      return <SearchScreen />
+    case 'library':
+      return <LibraryScreen />
+    case 'settings':
+      return <SettingsScreen root />
+  }
+}
+
+/** Вкладки открываются при первом заходе и дальше живут в фоне, чтобы не терять прокрутку и данные. */
+function useVisited(tab: Tab) {
+  const [visited, setVisited] = useState<Set<Tab>>(() => new Set([tab]))
+  if (!visited.has(tab)) setVisited(new Set(visited).add(tab))
+  return visited
 }
 
 export function App() {
@@ -57,9 +81,25 @@ export function App() {
 }
 
 function Main() {
+  const desktop = useDesktop()
   const nav = useNav()
-  const [visited, setVisited] = useState<Set<Tab>>(() => new Set([nav.tab]))
-  if (!visited.has(nav.tab)) setVisited(new Set(visited).add(nav.tab))
+  // На телефоне настройки — не вкладка, а экран внутри «Моих списков»
+  useEffect(() => {
+    if (!desktop && nav.tab === 'settings') selectTab('library')
+  }, [desktop])
+  return (
+    <>
+      {desktop ? <DesktopMain /> : <MobileMain />}
+      <InstallHint />
+      <UpdateBar />
+      <ToastHost />
+    </>
+  )
+}
+
+function MobileMain() {
+  const nav = useNav()
+  const visited = useVisited(nav.tab)
   const covered = nav.stack.length > 0
   const direction = TABS.indexOf(nav.tab) >= TABS.indexOf(nav.prevTab) ? 'enter-right' : 'enter-left'
 
@@ -72,10 +112,7 @@ function Main() {
             class={`screen tab-screen${tab === nav.tab && nav.tab !== nav.prevTab ? ' ' + direction : ''}`}
             hidden={tab !== nav.tab}
           >
-            {tab === 'home' && <HomeScreen />}
-            {tab === 'recs' && <RecsScreen />}
-            {tab === 'search' && <SearchScreen />}
-            {tab === 'library' && <LibraryScreen />}
+            <TabContent tab={tab} />
           </div>
         ))}
         <div class="status-scrim" />
@@ -85,10 +122,75 @@ function Main() {
         <StackScreen key={entry.uid} entry={entry} covered={i < nav.stack.length - 1} />
       ))}
       {nav.leaving && <StackScreen key={nav.leaving.uid} entry={nav.leaving} leaving />}
-      <InstallHint />
-      <UpdateBar />
-      <ToastHost />
     </>
+  )
+}
+
+/**
+ * ПК: слева — вертикальный билет с логотипом и вкладками, справа — экран.
+ * Вложенные экраны открываются в той же области, лента остаётся на месте.
+ */
+function DesktopMain() {
+  const nav = useNav()
+  const visited = useVisited(nav.tab)
+  const covered = nav.stack.length > 0
+  const direction = DESKTOP_TABS.indexOf(nav.tab) >= DESKTOP_TABS.indexOf(nav.prevTab) ? 'enter-down' : 'enter-up'
+
+  return (
+    <div class="desk">
+      <Rail />
+      <main class="desk-content">
+        {DESKTOP_TABS.filter((t) => visited.has(t)).map((tab) => (
+          <div
+            key={tab}
+            class={`screen tab-screen${tab === nav.tab && nav.tab !== nav.prevTab ? ' ' + direction : ''}${covered ? ' desk-covered' : ''}`}
+            hidden={tab !== nav.tab}
+          >
+            <TabContent tab={tab} />
+          </div>
+        ))}
+        {nav.stack.map((entry, i) => (
+          <StackScreen key={entry.uid} entry={entry} covered={i < nav.stack.length - 1} desktop />
+        ))}
+        {nav.leaving && <StackScreen key={nav.leaving.uid} entry={nav.leaving} leaving desktop />}
+      </main>
+    </div>
+  )
+}
+
+/** Боковая навигация ПК — вертикальный билет: сверху корешок с названием, ниже вкладки. */
+function Rail() {
+  const nav = useNav()
+  const index = DESKTOP_TABS.indexOf(nav.tab)
+  const wobble = index >= DESKTOP_TABS.indexOf(nav.prevTab) ? 'wobble-r' : 'wobble-l'
+  return (
+    <nav class="rail ticket" role="tablist" aria-label="Разделы">
+      <button class="rail-logo" onClick={() => selectTab('home')} aria-label="Pickture — новинки">
+        <span class="rail-wordmark">Pickture</span>
+      </button>
+      <div class="perforation" />
+      <div class="rail-items">
+        <div
+          key={nav.tab}
+          class={`rail-stamp${nav.tab !== nav.prevTab ? ' ' + wobble : ''}`}
+          style={{ transform: `translateY(${index * 100}%)` }}
+        >
+          <div />
+        </div>
+        {DESKTOP_TABS.map((tab) => (
+          <button
+            key={tab}
+            role="tab"
+            aria-selected={tab === nav.tab}
+            class={`rail-item press${tab === nav.tab ? ' active' : ''}`}
+            onClick={() => selectTab(tab)}
+          >
+            <Icon name={TAB_INFO[tab].icon} size={22} />
+            <span class="t-tiny">{TAB_INFO[tab].label}</span>
+          </button>
+        ))}
+      </div>
+    </nav>
   )
 }
 
@@ -123,9 +225,9 @@ function TabBar() {
   )
 }
 
-function StackScreen(props: { entry: StackEntry; covered?: boolean; leaving?: boolean }) {
+function StackScreen(props: { entry: StackEntry; covered?: boolean; leaving?: boolean; desktop?: boolean }) {
   const ref = useRef<HTMLDivElement>(null)
-  useSwipeBack(ref, !props.leaving && !props.covered)
+  useSwipeBack(ref, !props.desktop && !props.leaving && !props.covered)
   const r = props.entry.route
   let content
   switch (r.name) {
@@ -151,7 +253,7 @@ function StackScreen(props: { entry: StackEntry; covered?: boolean; leaving?: bo
   return (
     <div
       ref={ref}
-      class={`screen stack-screen${props.leaving ? ' leaving' : ' entering'}${props.covered ? ' covered' : ''}`}
+      class={`screen ${props.desktop ? 'desk-stack' : 'stack-screen'}${props.leaving ? ' leaving' : ' entering'}${props.covered ? ' covered' : ''}`}
     >
       {content}
     </div>

@@ -7,6 +7,7 @@ import {
   ErrorBox,
   LoadingBox,
   MessageBox,
+  OutlineButton,
   Poster,
   ScreenHeader,
   StampIconButton,
@@ -14,6 +15,7 @@ import {
   matchColor,
 } from '../ui/components'
 import { usePullToRefresh } from '../ui/gestures'
+import { useDesktop } from '../ui/layout'
 import { push, useNav } from '../ui/nav'
 import { OfflineBanner } from './Home'
 import { useScrollToTop } from './shared'
@@ -32,6 +34,7 @@ export function RecsScreen() {
   const [leaving, setLeaving] = useState<Set<string>>(new Set())
   const [tab, setTab] = useState<MediaType>('movie')
   const scroll = useRef<HTMLDivElement>(null)
+  const desktop = useDesktop()
   useScrollToTop(scroll, 'recs')
 
   async function load(force: boolean) {
@@ -74,6 +77,7 @@ export function RecsScreen() {
       <ScreenHeader
         title="Для вас"
         subtitle="Подборка по вашим оценкам. Оценивайте прямо здесь — список станет точнее."
+        trailing={desktop && <OutlineButton text="Обновить" icon="refresh" onClick={() => load(true)} disabled={loading} />}
       />
       {!hasData && loading ? (
         <LoadingBox fill />
@@ -106,7 +110,7 @@ export function RecsScreen() {
                 text="Потяните вниз, чтобы обновить, или оцените ещё несколько фильмов."
               />
             ))}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }} key={tab}>
+          <div class="recs-list" key={tab}>
             {items.map((rec, i) => (
               <RecommendationRow
                 key={titleKey(rec.title)}

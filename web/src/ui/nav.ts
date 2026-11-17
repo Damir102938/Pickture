@@ -2,8 +2,11 @@ import { useEffect, useState } from 'preact/hooks'
 import type { MediaType } from '../core/models'
 import type { FeedSection } from '../core/repository'
 
-export type Tab = 'home' | 'recs' | 'search' | 'library'
+export type Tab = 'home' | 'recs' | 'search' | 'library' | 'settings'
+/** Нижняя панель телефона. Настройки там открываются из «Моих списков». */
 export const TABS: Tab[] = ['home', 'recs', 'search', 'library']
+/** Боковая лента ПК: настройки — отдельная вкладка, как в версии для Windows. */
+export const DESKTOP_TABS: Tab[] = ['home', 'recs', 'search', 'library', 'settings']
 
 export type Route =
   | { name: 'details'; type: MediaType; id: number }
@@ -53,6 +56,8 @@ export function useNav(): NavState {
 }
 
 export function selectTab(tab: Tab) {
+  // На ПК лента видна и поверх вложенных экранов: выбор вкладки закрывает их
+  if (nav.stack.length > 0) resetStack()
   if (tab === nav.tab) set({ reselect: nav.reselect + 1 })
   else set({ prevTab: nav.tab, tab })
 }
@@ -100,5 +105,12 @@ export function initNavigation() {
   window.addEventListener('popstate', (e) => {
     const depth = typeof e.state?.depth === 'number' ? e.state.depth : 0
     popTo(depth)
+  })
+  // Esc — назад, если открыт вложенный экран и фокус не в поле ввода
+  window.addEventListener('keydown', (e) => {
+    if (e.key !== 'Escape' || nav.stack.length === 0) return
+    const target = e.target as HTMLElement | null
+    if (target?.closest('input, textarea, [role=dialog]')) return
+    back()
   })
 }

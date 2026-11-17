@@ -3,9 +3,11 @@ import { App } from './app'
 import { flush } from './data/db'
 import { init } from './data/store'
 import { registerServiceWorker } from './pwa'
+import { initLayout } from './ui/layout'
 import { initNavigation } from './ui/nav'
 import './styles.css'
 
+initLayout()
 initNavigation()
 render(<App />, document.getElementById('app')!)
 init()
