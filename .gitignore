@@ -3,7 +3,7 @@
 /local.properties
 /.idea/
 .DS_Store
-/build/
+build/
 /app/build/
 /captures/
 .externalNativeBuild/
@@ -15,3 +15,6 @@
 /keystore.properties
 *.apk
 *.aab
+
+# Готовые файлы для релизов
+/dist/

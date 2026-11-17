@@ -50,7 +50,7 @@ import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SettingsScreen(onBack: () -> Unit, onEditOnboarding: () -> Unit) {
+fun SettingsScreen(onBack: () -> Unit, onEditOnboarding: () -> Unit, onEditApiKey: () -> Unit) {
     val context = LocalContext.current
     val container = context.container
     val scope = rememberCoroutineScope()
@@ -73,6 +73,20 @@ fun SettingsScreen(onBack: () -> Unit, onEditOnboarding: () -> Unit) {
             },
         )
         Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
+            Header("Ключ TMDB")
+            val key = settings.tmdbApiKey
+            Text(
+                if (key.isBlank()) "Ключ не задан"
+                else "Сохранён ключ ${key.take(4)}…${key.takeLast(4)}",
+                style = MaterialTheme.typography.bodyMedium,
+                modifier = Modifier.padding(horizontal = 16.dp),
+            )
+            Spacer(Modifier.height(8.dp))
+            OutlinedButton(onClick = onEditApiKey, modifier = Modifier.padding(horizontal = 16.dp)) {
+                Text("Изменить ключ")
+            }
+
+            HorizontalDivider(Modifier.padding(vertical = 16.dp))
             Header("Уведомления")
             SwitchRow(
                 title = "Присылать уведомления",
@@ -147,6 +161,21 @@ fun SettingsScreen(onBack: () -> Unit, onEditOnboarding: () -> Unit) {
             OutlinedButton(onClick = { confirmReset = true }, modifier = Modifier.padding(horizontal = 16.dp)) {
                 Text("Сбросить все оценки и списки")
             }
+
+            HorizontalDivider(Modifier.padding(vertical = 16.dp))
+            Header("Обновления")
+            Text(
+                "Версия ${container.updater.currentVersion}. Новые версии выходят на GitHub — " +
+                    "приложение проверяет их при запуске и предлагает обновиться.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(horizontal = 16.dp),
+            )
+            Spacer(Modifier.height(8.dp))
+            OutlinedButton(
+                onClick = { scope.launch { container.updater.checkManually() } },
+                modifier = Modifier.padding(horizontal = 16.dp),
+            ) { Text("Проверить обновления") }
 
             HorizontalDivider(Modifier.padding(vertical = 16.dp))
             Text(

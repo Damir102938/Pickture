@@ -38,7 +38,9 @@ import com.moviepicker.data.local.Settings
 import com.moviepicker.domain.MediaType
 import com.moviepicker.domain.Title
 import com.moviepicker.domain.TitleKey
+import com.moviepicker.ui.apikey.ApiKeyScreen
 import com.moviepicker.ui.details.DetailsScreen
+import com.moviepicker.ui.update.UpdatePrompt
 import com.moviepicker.ui.home.HomeScreen
 import com.moviepicker.ui.library.LibraryScreen
 import com.moviepicker.ui.onboarding.OnboardingScreen
@@ -55,6 +57,7 @@ private object Routes {
     const val SEARCH = "search"
     const val LIBRARY = "library"
     const val SETTINGS = "settings"
+    const val API_KEY = "apikey"
     const val ONBOARDING = "onboarding"
     const val ONBOARDING_EDIT = "onboarding/edit"
     const val SECTION = "section/{name}"
@@ -89,6 +92,7 @@ fun MovieApp(startWithOnboarding: Boolean, deepLink: TitleKey?, onDeepLinkHandle
         }
     }
     AskNotificationPermissionOnce(active = route == Routes.HOME)
+    UpdatePrompt()
 
     val openTitle: (Title) -> Unit = { nav.navigate(Routes.details(it.key)) }
 
@@ -134,10 +138,14 @@ fun MovieApp(startWithOnboarding: Boolean, deepLink: TitleKey?, onDeepLinkHandle
             composable(Routes.LIBRARY) {
                 LibraryScreen(onOpen = openTitle, onSettings = { nav.navigate(Routes.SETTINGS) })
             }
+            composable(Routes.API_KEY) {
+                ApiKeyScreen(onSaved = { nav.popBackStack() }, onBack = { nav.popBackStack() })
+            }
             composable(Routes.SETTINGS) {
                 SettingsScreen(
                     onBack = { nav.popBackStack() },
                     onEditOnboarding = { nav.navigate(Routes.ONBOARDING_EDIT) },
+                    onEditApiKey = { nav.navigate(Routes.API_KEY) },
                 )
             }
             composable(

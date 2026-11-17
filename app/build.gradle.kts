@@ -32,10 +32,12 @@ android {
         applicationId = "com.moviepicker"
         minSdk = 26
         targetSdk = 34
-        versionCode = 3
-        versionName = "0.3.0"
+        versionCode = (project.property("pickture.versionCode") as String).toInt()
+        versionName = project.property("pickture.version") as String
 
-        buildConfigField("String", "TMDB_API_KEY", "\"${localProp("TMDB_API_KEY")}\"")
+        // Ключ из local.properties попадает только в debug-сборки (для разработки).
+        // В релизе ключ вводит сам пользователь — один APK подходит всем.
+        buildConfigField("String", "TMDB_API_KEY", "\"\"")
         buildConfigField(
             "String", "TMDB_API_URL",
             "\"${localProp("TMDB_API_URL", "https://api.themoviedb.org/3/")}\""
@@ -65,6 +67,7 @@ android {
             if (hasReleaseKey) signingConfig = signingConfigs.getByName("release")
         }
         debug {
+            buildConfigField("String", "TMDB_API_KEY", "\"${localProp("TMDB_API_KEY")}\"")
             // Та же подпись, что у релиза: debug- и release-сборки ставятся друг поверх друга
             if (hasReleaseKey) signingConfig = signingConfigs.getByName("release")
         }
@@ -87,6 +90,7 @@ android {
 }
 
 dependencies {
+    implementation(project(":core"))
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.core.splashscreen)
     implementation(libs.androidx.activity.compose)

@@ -13,7 +13,6 @@ import androidx.work.WorkerParameters
 import com.moviepicker.AppContainer
 import com.moviepicker.container
 import com.moviepicker.data.FeedSection
-import com.moviepicker.data.remote.TmdbApi
 import com.moviepicker.domain.MediaType
 import com.moviepicker.domain.TitleKey
 import retrofit2.HttpException
@@ -31,7 +30,7 @@ class ReleaseCheckWorker(context: Context, params: WorkerParameters) : Coroutine
     override suspend fun doWork(): Result {
         val container = applicationContext.container
         val settings = container.settings.current()
-        if (!settings.notificationsEnabled || !TmdbApi.hasApiKey) return Result.success()
+        if (!settings.notificationsEnabled || container.hasApiKey.value != true) return Result.success()
         if (!Notifications.canPost(applicationContext)) return Result.success()
 
         return try {

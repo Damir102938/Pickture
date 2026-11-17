@@ -1,7 +1,7 @@
 package com.moviepicker.data
 
 import com.moviepicker.data.local.SettingsStore
-import com.moviepicker.data.local.UserTitleDao
+import com.moviepicker.data.local.UserTitleStore
 import com.moviepicker.data.local.UserTitleEntity
 import com.moviepicker.data.remote.DetailsDto
 import com.moviepicker.data.remote.EpisodeDto
@@ -38,7 +38,7 @@ data class Page(val items: List<Title>, val page: Int, val hasMore: Boolean)
 
 class TitleRepository(
     private val api: TmdbApi,
-    private val dao: UserTitleDao,
+    private val dao: UserTitleStore,
     private val settings: SettingsStore,
     private val appScope: CoroutineScope,
 ) {

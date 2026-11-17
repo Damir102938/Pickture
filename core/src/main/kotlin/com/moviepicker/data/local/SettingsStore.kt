@@ -1,17 +1,14 @@
 package com.moviepicker.data.local
 
-import android.content.Context
+import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.core.stringSetPreferencesKey
-import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
-
-private val Context.dataStore by preferencesDataStore(name = "settings")
 
 data class Settings(
     val onboardingDone: Boolean = false,
@@ -20,9 +17,12 @@ data class Settings(
     val favoriteGenres: Set<Int> = emptySet(),
     val notificationsEnabled: Boolean = true,
     val notificationPermissionAsked: Boolean = false,
+    /** Ключ TMDB, введённый пользователем. */
+    val tmdbApiKey: String = "",
 )
 
-class SettingsStore(private val context: Context) {
+/** Настройки приложения поверх DataStore (на Android — файл приложения, на ПК — файл в профиле). */
+class SettingsStore(private val dataStore: DataStore<Preferences>) {
 
     private object Keys {
         val onboardingDone = booleanPreferencesKey("onboarding_done")
@@ -31,9 +31,10 @@ class SettingsStore(private val context: Context) {
         val notificationsEnabled = booleanPreferencesKey("notifications_enabled")
         val permissionAsked = booleanPreferencesKey("notification_permission_asked")
         val notifiedNew = stringPreferencesKey("notified_new_titles")
+        val tmdbApiKey = stringPreferencesKey("tmdb_api_key")
     }
 
-    val settings: Flow<Settings> = context.dataStore.data.map { it.toSettings() }
+    val settings: Flow<Settings> = dataStore.data.map { it.toSettings() }
 
     suspend fun current(): Settings = settings.first()
 
@@ -43,26 +44,33 @@ class SettingsStore(private val context: Context) {
         favoriteGenres = this[Keys.favoriteGenres].orEmpty().mapNotNull { it.toIntOrNull() }.toSet(),
         notificationsEnabled = this[Keys.notificationsEnabled] ?: true,
         notificationPermissionAsked = this[Keys.permissionAsked] ?: false,
+        tmdbApiKey = this[Keys.tmdbApiKey].orEmpty(),
     )
 
-    suspend fun completeOnboarding(genres: Set<Int>) = context.dataStore.edit {
+    suspend fun completeOnboarding(genres: Set<Int>) = dataStore.edit {
         it[Keys.onboardingDone] = true
         it[Keys.favoriteGenres] = genres.map(Int::toString).toSet()
     }
 
-    suspend fun setUseOnboarding(value: Boolean) = context.dataStore.edit { it[Keys.useOnboarding] = value }
+    suspend fun setFavoriteGenres(genres: Set<Int>) = dataStore.edit {
+        it[Keys.favoriteGenres] = genres.map(Int::toString).toSet()
+    }
+
+    suspend fun setUseOnboarding(value: Boolean) = dataStore.edit { it[Keys.useOnboarding] = value }
 
     suspend fun setNotificationsEnabled(value: Boolean) =
-        context.dataStore.edit { it[Keys.notificationsEnabled] = value }
+        dataStore.edit { it[Keys.notificationsEnabled] = value }
 
     suspend fun setNotificationPermissionAsked() =
-        context.dataStore.edit { it[Keys.permissionAsked] = true }
+        dataStore.edit { it[Keys.permissionAsked] = true }
+
+    suspend fun setTmdbApiKey(key: String) = dataStore.edit { it[Keys.tmdbApiKey] = key.trim() }
 
     /** Ключи новинок, о которых уже присылали уведомление (хранится последние 300). */
     suspend fun notifiedNewTitles(): List<String> =
-        context.dataStore.data.first()[Keys.notifiedNew].orEmpty().split('|').filter { it.isNotBlank() }
+        dataStore.data.first()[Keys.notifiedNew].orEmpty().split('|').filter { it.isNotBlank() }
 
-    suspend fun addNotifiedNewTitles(keys: List<String>) = context.dataStore.edit {
+    suspend fun addNotifiedNewTitles(keys: List<String>) = dataStore.edit {
         val existing = it[Keys.notifiedNew].orEmpty().split('|').filter { k -> k.isNotBlank() }
         it[Keys.notifiedNew] = (existing + keys).distinct().takeLast(300).joinToString("|")
     }

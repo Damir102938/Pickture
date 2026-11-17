@@ -50,6 +50,7 @@ class RecommendationEngine(
 
     suspend fun profile(): TasteProfile = TasteProfile.build(repository.allMarked(), settings.current())
 
+    /** [limit] — сколько рекомендаций каждого типа (фильмов и сериалов). */
     suspend fun recommend(force: Boolean = false, limit: Int = 60): List<Recommendation> = mutex.withLock {
         ensureFeatures()
         val entities = repository.allMarked()
@@ -146,7 +147,10 @@ class RecommendationEngine(
             )
         }) { candidate(it).add(0.5, "С любимыми актёрами и режиссёрами") }
 
-        listOf(FeedSection.DIGITAL, FeedSection.NEW_SERIES, FeedSection.UPCOMING_MOVIES).forEach { section ->
+        listOf(
+            FeedSection.DIGITAL, FeedSection.UPCOMING_MOVIES,
+            FeedSection.NEW_SERIES, FeedSection.ON_AIR, FeedSection.UPCOMING_SERIES,
+        ).forEach { section ->
             source({ repository.feed(section).items }) { candidate(it).fresh = true }
         }
 
@@ -157,13 +161,15 @@ class RecommendationEngine(
             outcome.getOrNull()?.forEach(apply)
         }
 
-        candidates.values
+        // Лучшие фильмы и лучшие сериалы отбираются отдельно — в приложении это две вкладки
+        val scored = candidates.values
             .asSequence()
             .filter { it.title.key !in profile.excluded }
             .mapNotNull { c -> score(c, profile, today) }
             .sortedByDescending { it.score }
-            .take(limit)
             .toList()
+        MediaType.entries.flatMap { type -> scored.filter { it.title.type == type }.take(limit) }
+            .sortedByDescending { it.score }
     }
 
     private fun score(c: Candidate, profile: TasteProfile, today: LocalDate): Recommendation? {

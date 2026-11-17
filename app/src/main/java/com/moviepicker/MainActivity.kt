@@ -9,7 +9,6 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.getValue
@@ -19,11 +18,10 @@ import androidx.compose.ui.Modifier
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.moviepicker.data.local.Settings
-import com.moviepicker.data.remote.TmdbApi
+import com.moviepicker.ui.apikey.ApiKeyScreen
 import com.moviepicker.domain.MediaType
 import com.moviepicker.domain.TitleKey
 import com.moviepicker.ui.MovieApp
-import com.moviepicker.ui.common.MessageBox
 import com.moviepicker.ui.theme.MoviePickerTheme
 import com.moviepicker.work.Notifications
 
@@ -70,19 +68,12 @@ class MainActivity : ComponentActivity() {
                 Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
                     val settings by container.settings.settings
                         .collectAsStateWithLifecycle(initialValue = null as Settings?)
+                    val hasKey by container.hasApiKey.collectAsStateWithLifecycle()
                     val current = settings
-                    if (current != null || !TmdbApi.hasApiKey) contentReady = true
+                    if (current != null && hasKey != null) contentReady = true
                     when {
-                        !TmdbApi.hasApiKey -> MessageBox(
-                            title = "Нужен ключ TMDB API",
-                            text = "1. Зарегистрируйтесь на themoviedb.org\n" +
-                                "2. Settings → API → создайте ключ (бесплатно)\n" +
-                                "3. Добавьте в файл local.properties в корне проекта строку\n" +
-                                "TMDB_API_KEY=ваш_ключ\n" +
-                                "4. Пересоберите приложение",
-                            modifier = Modifier.safeDrawingPadding(),
-                        )
-                        current == null -> Unit // настройки ещё читаются с диска — доли секунды
+                        current == null || hasKey == null -> Unit // настройки ещё читаются с диска — доли секунды
+                        hasKey == false -> ApiKeyScreen(onSaved = {})
                         else -> {
                             val startWithOnboarding = remember { !current.onboardingDone }
                             MovieApp(

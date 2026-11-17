@@ -1,7 +1,5 @@
 package com.moviepicker.data.remote
 
-import android.util.Log
-import com.moviepicker.BuildConfig
 import kotlinx.serialization.json.Json
 import okhttp3.Interceptor
 import okhttp3.MediaType.Companion.toMediaType
@@ -66,25 +64,27 @@ interface TmdbApi {
 
     companion object {
         const val LANGUAGE = "ru-RU"
-        private val API_KEY_REGEX = Regex("api_key=[^&\\s]+")
+        const val DEFAULT_API_URL = "https://api.themoviedb.org/3/"
+        private val API_KEY_REGEX = Regex("""api_key=[^&\s]+""")
 
-        val hasApiKey: Boolean get() = BuildConfig.TMDB_API_KEY.isNotBlank()
-
-        fun create(debug: Boolean): TmdbApi {
-            val key = BuildConfig.TMDB_API_KEY
+        /**
+         * @param keyProvider текущий ключ TMDB (вводится пользователем в приложении)
+         * @param logger если задан — короткий лог запросов (ключ скрывается)
+         */
+        fun create(
+            baseUrl: String = DEFAULT_API_URL,
+            keyProvider: () -> String,
+            logger: ((String) -> Unit)? = null,
+        ): TmdbApi {
             val authInterceptor = Interceptor { chain ->
                 val original = chain.request()
+                val key = keyProvider().trim()
                 val urlBuilder = original.url.newBuilder()
                 if (original.url.queryParameter("language") == null) {
                     urlBuilder.addQueryParameter("language", LANGUAGE)
                 }
                 val requestBuilder = original.newBuilder()
-                // Длинный Read Access Token (JWT) передаётся заголовком, короткий API key параметром.
-                if (key.startsWith("eyJ")) {
-                    requestBuilder.header("Authorization", "Bearer $key")
-                } else {
-                    urlBuilder.addQueryParameter("api_key", key)
-                }
+                applyKey(key, urlBuilder, requestBuilder)
                 chain.proceed(requestBuilder.url(urlBuilder.build()).build())
             }
 
@@ -93,12 +93,12 @@ interface TmdbApi {
                 .readTimeout(20, TimeUnit.SECONDS)
                 .addInterceptor(authInterceptor)
                 .apply {
-                    if (debug) {
-                        val logger = HttpLoggingInterceptor { message ->
-                            Log.d("TMDB", message.replace(API_KEY_REGEX, "api_key=***"))
+                    if (logger != null) {
+                        val logging = HttpLoggingInterceptor { message ->
+                            logger(message.replace(API_KEY_REGEX, "api_key=***"))
                         }
-                        logger.level = HttpLoggingInterceptor.Level.BASIC
-                        addInterceptor(logger)
+                        logging.level = HttpLoggingInterceptor.Level.BASIC
+                        addInterceptor(logging)
                     }
                 }
                 .build()
@@ -110,11 +110,20 @@ interface TmdbApi {
             }
 
             return Retrofit.Builder()
-                .baseUrl(BuildConfig.TMDB_API_URL.let { if (it.endsWith("/")) it else "$it/" })
+                .baseUrl(normalize(baseUrl))
                 .client(client)
                 .addConverterFactory(json.asConverterFactory("application/json".toMediaType()))
                 .build()
                 .create(TmdbApi::class.java)
         }
+
+        /** Длинный Read Access Token (JWT) передаётся заголовком, короткий API key — параметром. */
+        internal fun applyKey(key: String, url: okhttp3.HttpUrl.Builder, request: okhttp3.Request.Builder) {
+            if (key.isEmpty()) return
+            if (key.startsWith("eyJ")) request.header("Authorization", "Bearer $key")
+            else url.addQueryParameter("api_key", key)
+        }
+
+        internal fun normalize(url: String) = if (url.endsWith("/")) url else "$url/"
     }
 }

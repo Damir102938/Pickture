@@ -1,6 +1,5 @@
 package com.moviepicker.domain
 
-import com.moviepicker.BuildConfig
 import java.time.LocalDate
 
 enum class MediaType(val path: String, val label: String) {
@@ -88,7 +87,16 @@ data class TitleDetails(
 )
 
 object Images {
-    private val base = BuildConfig.TMDB_IMAGE_URL.let { if (it.endsWith("/")) it else "$it/" }
+    const val DEFAULT_BASE_URL = "https://image.tmdb.org/t/p/"
+
+    /** Можно заменить на прокси при старте приложения. */
+    @Volatile
+    var baseUrl: String = DEFAULT_BASE_URL
+        set(value) {
+            field = if (value.endsWith("/")) value else "$value/"
+        }
+
+    private val base: String get() = baseUrl
 
     fun poster(path: String?, size: String = "w342"): String? = path?.let { "$base$size$it" }
     fun backdrop(path: String?, size: String = "w780"): String? = path?.let { "$base$size$it" }

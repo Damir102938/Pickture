@@ -24,7 +24,14 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SegmentedButton
+import androidx.compose.material3.SegmentedButtonDefaults
+import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Text
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
+import com.moviepicker.domain.MediaType
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -101,6 +108,7 @@ fun RecommendationsScreen(onOpen: (Title) -> Unit, onSetupTaste: () -> Unit) {
     val refreshing by vm.refreshing.collectAsStateWithLifecycle()
     val hidden by vm.hidden.collectAsStateWithLifecycle()
     val profile by vm.profile.collectAsStateWithLifecycle()
+    var tab by rememberSaveable { mutableStateOf(MediaType.MOVIE) }
 
     // При каждом возвращении на вкладку — пересчёт, если оценки изменились (иначе берётся кэш)
     LaunchedEffect(Unit) { vm.load(force = false) }
@@ -114,7 +122,7 @@ fun RecommendationsScreen(onOpen: (Title) -> Unit, onSetupTaste: () -> Unit) {
             LoadState.Loading -> LoadingBox()
             is LoadState.Error -> ErrorBox(s.message, onRetry = { vm.load(true) })
             is LoadState.Success -> {
-                val items = s.data.filter { it.title.key !in hidden }
+                val items = s.data.filter { it.title.key !in hidden && it.title.type == tab }
                 LazyColumn(contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
                     item {
                         Column {
@@ -124,6 +132,20 @@ fun RecommendationsScreen(onOpen: (Title) -> Unit, onSetupTaste: () -> Unit) {
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
+                            Spacer(Modifier.height(12.dp))
+                            // Фильмы и сериалы — отдельными вкладками, чтобы не путались
+                            SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
+                                MediaType.entries.forEachIndexed { index, type ->
+                                    val count = s.data.count { it.title.type == type && it.title.key !in hidden }
+                                    SegmentedButton(
+                                        selected = tab == type,
+                                        onClick = { tab = type },
+                                        shape = SegmentedButtonDefaults.itemShape(index, MediaType.entries.size),
+                                    ) {
+                                        Text(if (type == MediaType.MOVIE) "Фильмы · $count" else "Сериалы · $count")
+                                    }
+                                }
+                            }
                         }
                     }
                     if (items.isEmpty()) {

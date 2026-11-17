@@ -14,4 +14,4 @@ dependencyResolutionManagement {
 }
 
 rootProject.name = "Pickture"
-include(":app")
+include(":core", ":app", ":desktop")
