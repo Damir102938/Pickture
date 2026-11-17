@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from 'preact/hooks'
-import { type Title, titleKey } from '../core/models'
+import { type Title, plusDays, titleKey, today } from '../core/models'
 import { FEED_SECTIONS, type FeedSection } from '../core/repository'
 import { userMessage } from '../core/tmdb'
 import { getState, markOf, repository, saveFeedRows, useApp } from '../data/store'
-import { LoadingBox, ErrorBox, ScreenHeader, SectionHeader, TextAction, TitleCard } from '../ui/components'
+import { LoadingBox, ErrorBox, OutlineButton, ScreenHeader, SectionHeader, TextAction, TitleCard } from '../ui/components'
 import { usePullToRefresh } from '../ui/gestures'
 import { Icon } from '../ui/icons'
+import { useDesktop } from '../ui/layout'
 import { push } from '../ui/nav'
 import { useScrollToTop } from './shared'
 
@@ -25,6 +26,8 @@ export function HomeScreen() {
   const [refreshing, setRefreshing] = useState(false)
   const [offline, setOffline] = useState(false)
   const scroll = useRef<HTMLDivElement>(null)
+  // На ПК вместо «потяните вниз» — кнопка «Обновить» в шапке
+  const desktop = useDesktop()
   useScrollToTop(scroll, 'home')
 
   async function load(refresh: boolean) {
@@ -58,6 +61,9 @@ export function HomeScreen() {
   /** Свежие релизы и анонсы, которые лучше всего совпадают со вкусом. */
   const forYou = useMemo(() => {
     if (profile.isEmpty) return []
+    // Только действительно новое: вышло за последние полгода или ещё выйдет. В «Сериалах в эфире»
+    // бывают давние сериалы с новым сезоном — на полке «Новинки» они сбивают с толку.
+    const freshFrom = plusDays(today(), -180)
     const seen = new Set<string>()
     const list: [Title, number][] = []
     for (const { id } of FEED_SECTIONS) {
@@ -66,7 +72,7 @@ export function HomeScreen() {
       if (row?.state !== 'ok') continue
       for (const t of row.items) {
         const k = titleKey(t)
-        if (seen.has(k) || profile.excluded.has(k)) continue
+        if (seen.has(k) || profile.excluded.has(k) || !t.date || t.date < freshFrom) continue
         seen.add(k)
         const m = profile.matchPercent(t)
         if (m !== null && m >= 70) list.push([t, m])
@@ -84,7 +90,11 @@ export function HomeScreen() {
   return (
     <div class="scroll" ref={scroll}>
       {ptr}
-      <ScreenHeader title="Что нового" subtitle="Свежие релизы, сериалы и анонсы" />
+      <ScreenHeader
+        title="Что нового"
+        subtitle="Свежие релизы, сериалы и анонсы"
+        trailing={desktop && <OutlineButton text="Обновить" icon="refresh" onClick={() => load(true)} disabled={refreshing} />}
+      />
       {offline && <OfflineBanner />}
       {allFailed ? (
         <ErrorBox message={(rows[FEED_SECTIONS[0].id] as { message: string }).message} onRetry={() => load(false)} />
@@ -155,7 +165,7 @@ function TitleRow(props: {
           Пока ничего нет
         </div>
       ) : (
-        <div class="row-scroll">
+        <div class="row-scroll cards">
           {row.items.map((t) => (
             <TitleCard
               key={titleKey(t)}

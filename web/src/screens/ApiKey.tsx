@@ -56,7 +56,7 @@ export function ApiKeyScreen(props: { onSaved: () => void; onBack?: () => void }
   const open = (url: string) => window.open(url, '_blank', 'noopener')
 
   return (
-    <div class="scroll" style={{ paddingTop: 'var(--sat)', paddingBottom: 'calc(24px + var(--sab))' }}>
+    <div class="scroll centered" style={{ paddingTop: 'var(--sat)', paddingBottom: 'calc(24px + var(--sab))' }}>
       {props.onBack ? (
         <div style={{ padding: '10px 12px 0' }}>
           <BackButton onClick={props.onBack} />

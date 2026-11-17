@@ -117,7 +117,7 @@ export function OnboardingScreen(props: { edit: boolean; onDone: () => void }) {
 
   return (
     <div class="screen" style={{ position: 'absolute' }}>
-      <div class="scroll" style={{ paddingTop: 'var(--sat)' }}>
+      <div class="scroll centered" style={{ paddingTop: 'var(--sat)' }}>
         {step === 0 ? (
           <div style={{ paddingBottom: '16px' }}>
             <ScreenHeader
@@ -177,7 +177,7 @@ export function OnboardingScreen(props: { edit: boolean; onDone: () => void }) {
           </div>
         )}
       </div>
-      <div class="onboarding-footer">
+      <div class="onboarding-footer centered">
         <div class="perforation" style={{ flex: 'none' }} />
         <div class="row">
           {step === 0 ? (

@@ -2,11 +2,12 @@ import { useState } from 'preact/hooks'
 import { selectableGenres } from '../core/genres'
 import { clearAll, setUseOnboarding, useApp } from '../data/store'
 import { exportBackup, BackupImportButton } from '../ui/backup'
-import { OutlineButton, TextAction, TicketDialog, TopBar } from '../ui/components'
+import { OutlineButton, ScreenHeader, TextAction, TicketDialog, TopBar } from '../ui/components'
 import { push } from '../ui/nav'
 import { isStandalone, isIos, updateApp, useUpdateAvailable } from '../pwa'
 
-export function SettingsScreen() {
+/** [root] — вкладка боковой ленты на ПК: без кнопки «Назад», с обычным заголовком экрана. */
+export function SettingsScreen({ root = false }: { root?: boolean }) {
   const settings = useApp((s) => s.settings)
   const titles = useApp((s) => s.titles)
   const persisted = useApp((s) => s.persisted)
@@ -23,8 +24,10 @@ export function SettingsScreen() {
 
   return (
     <>
-      <TopBar title="Настройки" />
-      <div class="scroll" style={{ paddingTop: '18px' }}>
+      {!root && <TopBar title="Настройки" />}
+      <div class="scroll centered" style={{ paddingTop: root ? undefined : '18px' }}>
+        {root && <ScreenHeader title="Настройки" />}
+        {root && <div style={{ height: '18px' }} />}
         {header('Ключ TMDB')}
         <div class="t-body" style={{ padding: '0 16px' }}>
           {key ? `Сохранён ключ ${key.slice(0, 4)}…${key.slice(-4)}` : 'Ключ не задан'}

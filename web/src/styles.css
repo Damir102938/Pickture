@@ -1335,6 +1335,363 @@ img {
   justify-content: center;
 }
 
+/* ---------- Общие блоки карточки и подборки ---------- */
+
+.details-body {
+  padding: 16px 16px 0;
+}
+.stamp-row {
+  display: flex;
+  gap: 8px;
+  margin-top: 16px;
+}
+.recs-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.row-scroll.people {
+  gap: 10px;
+}
+
+/* ============================================================
+   ПК-раскладка (html.desktop): широкое окно и мышь.
+   Повторяет версию для Windows: боковая лента-билет, ряды без
+   горизонтальной прокрутки, широкая карточка фильма.
+   ============================================================ */
+
+html.desktop {
+  --tabbar: 0px;
+}
+
+.desk {
+  position: absolute;
+  inset: 0;
+  display: flex;
+}
+
+.rail {
+  --notch: 7px;
+  --at: 64px;
+  width: 94px;
+  flex: none;
+  margin: 10px 0 10px 10px;
+  border-radius: 10px;
+  display: flex;
+  flex-direction: column;
+}
+.rail-logo {
+  height: 64px;
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+.rail-wordmark {
+  font: 600 15px/18px var(--oswald);
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--gold);
+}
+.rail > .perforation {
+  flex: none;
+  margin: 0 8px;
+}
+.rail-items {
+  position: relative;
+  margin-top: 10px;
+}
+.rail-item {
+  width: 100%;
+  height: 68px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  color: var(--muted);
+  transition: color 200ms;
+}
+.rail-item:hover {
+  color: var(--text);
+}
+.rail-item.active {
+  color: var(--gold);
+}
+.rail-item.active .icon {
+  animation: bounce 520ms;
+}
+.rail-stamp {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 68px;
+  transition: transform 520ms cubic-bezier(0.34, 1.32, 0.5, 1);
+  pointer-events: none;
+}
+.rail-stamp > div {
+  position: absolute;
+  inset: 6px 10px;
+  border: 1.5px solid var(--gold);
+  border-radius: 5px;
+  transform: rotate(-3deg);
+}
+.rail-stamp.wobble-r > div {
+  animation: wobble-r 700ms;
+}
+.rail-stamp.wobble-l > div {
+  animation: wobble-l 700ms;
+}
+
+.desk-content {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+}
+
+/* Вкладки «перематываются» вверх-вниз, как плёнка, — в сторону вкладки в ленте */
+.tab-screen.enter-down {
+  animation: tab-enter-down 360ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+.tab-screen.enter-up {
+  animation: tab-enter-up 360ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+@keyframes tab-enter-down {
+  from {
+    opacity: 0;
+    transform: translateY(12%) scale(0.96);
+  }
+}
+@keyframes tab-enter-up {
+  from {
+    opacity: 0;
+    transform: translateY(-12%) scale(0.96);
+  }
+}
+.tab-screen.desk-covered {
+  visibility: hidden;
+}
+
+/* Вложенные экраны выезжают снизу, как билет из кассы */
+.desk-stack {
+  z-index: 10;
+  animation: desk-in 320ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+.desk-stack.covered {
+  visibility: hidden;
+}
+.desk-stack.leaving {
+  animation: desk-out 260ms ease-in forwards;
+  pointer-events: none;
+}
+@keyframes desk-in {
+  from {
+    opacity: 0;
+    transform: translateY(4%);
+  }
+}
+@keyframes desk-out {
+  to {
+    opacity: 0;
+    transform: translateY(4%);
+  }
+}
+
+html.desktop .scroll {
+  padding: 16px 16px 32px;
+}
+html.desktop .tab-screen .scroll {
+  padding: 16px 16px 32px;
+}
+html.desktop .top-bar {
+  padding: 12px 16px 0;
+}
+html.desktop .details-scroll {
+  padding: 0 0 32px;
+}
+/* Узкие экраны (ключ, онбординг, настройки) — колонкой посередине */
+html.desktop .scroll.centered,
+html.desktop .onboarding-footer.centered {
+  padding-left: max(16px, calc((100% - 760px) / 2));
+  padding-right: max(16px, calc((100% - 760px) / 2));
+}
+html.desktop .onboarding-footer {
+  padding-bottom: 14px;
+}
+
+html.desktop .toast {
+  bottom: 24px;
+  left: calc(50% + 52px);
+}
+
+/* Ряды без горизонтальной прокрутки: столько карточек, сколько помещается по ширине */
+html.desktop .row-scroll.cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(156px, 1fr));
+  grid-template-rows: auto;
+  grid-auto-rows: 0;
+  column-gap: 16px;
+  row-gap: 0;
+  overflow: hidden;
+  padding-top: 6px;
+  margin-top: -6px;
+  scroll-snap-type: none;
+}
+html.desktop .row-scroll.cards > .title-card {
+  width: auto !important;
+}
+html.desktop .row-scroll.people {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, 96px);
+  grid-template-rows: auto;
+  grid-auto-rows: 0;
+  column-gap: 14px;
+  row-gap: 0;
+  overflow: hidden;
+}
+html.desktop .person {
+  width: 96px;
+}
+html.desktop .person .photo {
+  width: 96px;
+  height: 120px;
+}
+
+html.desktop .grid {
+  grid-template-columns: repeat(auto-fill, minmax(164px, 1fr));
+  gap: 24px 16px;
+}
+
+html.desktop .toggle {
+  max-width: 420px;
+}
+html.desktop .search-field {
+  max-width: 640px;
+}
+
+/* «Для вас» — билеты в несколько колонок */
+html.desktop .recs-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(440px, 1fr));
+  gap: 20px;
+  padding: 0 16px;
+}
+html.desktop .rec-row {
+  margin: 0;
+  min-height: 186px;
+  --at: calc(100% - 64px);
+}
+html.desktop .rec-row .poster {
+  width: 124px;
+}
+html.desktop .rec-row .stub {
+  width: 64px;
+}
+html.desktop .rec-row .body {
+  padding: 14px 16px;
+}
+
+/* Карточка фильма: большой фон, постер слева, описание колонкой */
+html.desktop .hero {
+  height: 380px;
+}
+html.desktop .hero img {
+  object-position: center 25%;
+}
+/* Постер слева, всё остальное — колонкой справа (как в версии для Windows) */
+html.desktop .details-main {
+  display: grid;
+  grid-template-columns: 240px minmax(0, 900px);
+  column-gap: 32px;
+  padding: 0 40px;
+  margin-top: -140px;
+  position: relative;
+  z-index: 1;
+}
+html.desktop .details-head {
+  display: contents;
+}
+html.desktop .details-head .poster {
+  grid-column: 1;
+  grid-row: 1 / span 2;
+  align-self: start;
+  width: 240px;
+  border-radius: 8px;
+}
+html.desktop .details-head .info {
+  grid-column: 2;
+  grid-row: 1;
+  padding-top: 116px;
+}
+html.desktop .details-title {
+  font-size: 26px;
+  line-height: 30px;
+}
+html.desktop .details-body {
+  grid-column: 2;
+  grid-row: 2;
+  padding: 16px 0 0;
+}
+html.desktop .stamp-row .stamp-btn {
+  flex: none;
+  width: 132px;
+}
+html.desktop .details-body .marquee-btn.block {
+  display: inline-flex;
+  width: auto;
+}
+html.desktop .details-body .release {
+  max-width: 640px;
+}
+html.desktop .details-scroll section {
+  padding-left: 24px;
+  padding-right: 24px;
+}
+html.desktop .floating-back {
+  top: 12px;
+  left: 12px;
+}
+
+html.desktop .player {
+  max-width: 1040px;
+  margin: 16px auto 0;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+/* Мышь: подсветка при наведении и тонкие полосы прокрутки */
+html.desktop .press:hover {
+  filter: brightness(1.12);
+}
+html.desktop .title-card .ticket {
+  transition: transform 220ms var(--spring), box-shadow 220ms;
+}
+html.desktop .title-card:hover {
+  filter: none;
+}
+html.desktop .title-card:hover .ticket {
+  transform: translateY(-4px);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.45);
+}
+html.desktop .scroll::-webkit-scrollbar {
+  width: 10px;
+}
+html.desktop .scroll::-webkit-scrollbar-thumb {
+  background: var(--perf);
+  border-radius: 5px;
+  border: 2px solid var(--bg);
+}
+html.desktop .scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+html.desktop .scroll {
+  scrollbar-width: thin;
+  scrollbar-color: var(--perf) transparent;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

@@ -76,7 +76,7 @@ export function SearchScreen() {
     <div class="scroll" ref={scroll}>
       <ScreenHeader title="Поиск" />
       <form
-        class="field"
+        class="field search-field"
         style={{ margin: '8px 16px 0' }}
         role="search"
         onSubmit={(e) => {

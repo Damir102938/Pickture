@@ -29,6 +29,7 @@ import {
   matchColor,
 } from '../ui/components'
 import { Icon } from '../ui/icons'
+import { useDesktop } from '../ui/layout'
 import { back, push } from '../ui/nav'
 
 type Load = { state: 'loading' } | { state: 'error'; message: string } | { state: 'ok'; data: TitleDetails }
@@ -64,7 +65,7 @@ export function DetailsScreen({ type, id }: { type: MediaType; id: number }) {
 
   return (
     <>
-      <div class="scroll" style={{ paddingTop: '0px' }}>
+      <div class="scroll details-scroll" style={{ paddingTop: '0px' }}>
         {load.state === 'loading' ? (
           <LoadingBox fill />
         ) : load.state === 'error' ? (
@@ -84,6 +85,8 @@ function DetailsContent(props: { details: TitleDetails; mark: { reaction: number
   const { details, mark, match } = props
   const t = details.title
   const profile = useApp((s) => s.profile)
+  // На ПК картинки крупнее
+  const desktop = useDesktop()
   const toggleReaction = (r: number) => setReaction(t, mark.reaction === r ? REACTION.NONE : r)
   const trailer = details.videos[0]
   const more = details.videos.length - 1
@@ -93,10 +96,11 @@ function DetailsContent(props: { details: TitleDetails; mark: { reaction: number
   return (
     <>
       <div class="hero">
-        <Img src={Images.backdrop(t.backdropPath) ?? Images.poster(t.posterPath, 'w780')} eager />
+        <Img src={Images.backdrop(t.backdropPath, desktop ? 'w1280' : 'w780') ?? Images.poster(t.posterPath, 'w780')} eager />
       </div>
+      <div class="details-main">
       <div class="details-head">
-        <Poster path={t.posterPath} eager />
+        <Poster path={t.posterPath} size={desktop ? 'w500' : 'w342'} eager />
         <div class="info">
           {details.genres.length > 0 && (
             <div class="t-kicker" style={{ letterSpacing: '1px' }}>
@@ -109,7 +113,7 @@ function DetailsContent(props: { details: TitleDetails; mark: { reaction: number
           {t.originalName && <div class="t-small muted">{t.originalName}</div>}
         </div>
       </div>
-      <div style={{ padding: '16px 16px 0' }}>
+      <div class="details-body">
         <div class="chips">
           {year && <TicketField label="Год" value={String(year)} />}
           {t.type === 'tv'
@@ -123,7 +127,7 @@ function DetailsContent(props: { details: TitleDetails; mark: { reaction: number
           {t.voteCount > 0 && <TicketField label="TMDB" value={`★ ${formatRating(t.rating)}`} color="var(--gold)" />}
           {match !== null && <Stamp text={`Совпадение ${match}%`} color={matchColor(match)} style={{ marginTop: '10px', marginLeft: '4px' }} />}
         </div>
-        <div style={{ display: 'flex', gap: '8px', marginTop: '16px' }}>
+        <div class="stamp-row">
           <StampButton
             icon={mark.reaction === REACTION.LIKE ? 'favorite' : 'favoriteBorder'}
             label="Нравится"
@@ -173,10 +177,11 @@ function DetailsContent(props: { details: TitleDetails; mark: { reaction: number
           </div>
         )}
       </div>
+      </div>
       {details.cast.length > 0 && (
         <section style={{ paddingTop: '16px' }}>
           <SectionHeader title="В ролях" />
-          <div class="row-scroll" style={{ gap: '10px' }}>
+          <div class="row-scroll people">
             {details.cast.map((p) => (
               <div class="person" key={p.id}>
                 <div class="poster photo">
@@ -193,7 +198,7 @@ function DetailsContent(props: { details: TitleDetails; mark: { reaction: number
       {details.similar.length > 0 && (
         <section style={{ paddingTop: '16px' }}>
           <SectionHeader title="Похожее" />
-          <div class="row-scroll">
+          <div class="row-scroll cards">
             {details.similar.map((s) => (
               <TitleCard
                 key={titleKey(s)}

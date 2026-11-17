@@ -8,7 +8,6 @@
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
-  "orientation": "portrait",
   "background_color": "#0F1020",
   "theme_color": "#0F1020",
   "categories": ["entertainment"],
