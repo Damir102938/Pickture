@@ -166,8 +166,9 @@ function useDevKey() {
 
 function Step(props: { n: number; text: string; children?: ComponentChildren }) {
   return (
-    <div style={{ display: 'flex' }}>
-      <span class="t-number gold" style={{ width: '28px', flex: 'none', fontSize: '15px', display: 'inline-block' }}>
+    // Номер стоит на одной линии с первой строкой текста: та же высота строки и выравнивание по базовой линии
+    <div style={{ display: 'flex', alignItems: 'baseline' }}>
+      <span class="t-number gold" style={{ width: '28px', flex: 'none', fontSize: '15px', lineHeight: '20px', display: 'inline-block' }}>
         {String(props.n).padStart(2, '0')}
       </span>
       <div>
