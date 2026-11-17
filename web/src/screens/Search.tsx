@@ -116,7 +116,7 @@ export function SearchScreen() {
           canLoadMore={state.hasMore && !state.error}
           onLoadMore={loadMore}
           header={
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
               <span class="t-section">{state.isSearch ? 'Результаты поиска' : 'Популярное на этой неделе'}</span>
               <div class="perforation" />
             </div>

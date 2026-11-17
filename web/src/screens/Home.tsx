@@ -138,9 +138,9 @@ function TitleRow(props: {
   const profile = getState().profile
   const row = props.row
   return (
-    <section style={{ paddingTop: 14 }}>
+    <section style={{ paddingTop: '14px' }}>
       <SectionHeader title={props.title} number={props.number} subtitle={props.subtitle} onAll={props.onAll} />
-      <div style={{ height: 6 }} />
+      <div style={{ height: '6px' }} />
       {row.state === 'loading' ? (
         <LoadingBox />
       ) : row.state === 'error' ? (

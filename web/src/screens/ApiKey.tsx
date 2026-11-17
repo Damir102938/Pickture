@@ -62,19 +62,19 @@ export function ApiKeyScreen(props: { onSaved: () => void; onBack?: () => void }
           <BackButton onClick={props.onBack} />
         </div>
       ) : (
-        <div style={{ height: 16 }} />
+        <div style={{ height: '16px' }} />
       )}
       <ScreenHeader
         title="Ключ TMDB"
         subtitle="Pickture берёт данные о фильмах из TMDB — крупной открытой базы кино. Нужен личный ключ: он бесплатный, а получить его можно за пару минут."
       />
-      <div class="ticket" style={{ '--notch': '7px', margin: '16px 16px 0', padding: 16, borderRadius: 10 }}>
+      <div class="ticket" style={{ '--notch': '7px', margin: '16px 16px 0', padding: '16px', borderRadius: '10px' }}>
         <Step n={1} text="Зарегистрируйтесь на TMDB, если ещё нет аккаунта">
           <TextAction
             text="Регистрация на themoviedb.org"
             trailingIcon="openInNew"
             onClick={() => open(TmdbLinks.SIGN_UP)}
-            style={{ marginLeft: -10 }}
+            style={{ marginLeft: '-10px' }}
           />
         </Step>
         <div class="perforation" style={{ margin: '10px 0', flex: 'none' }} />
@@ -83,7 +83,7 @@ export function ApiKeyScreen(props: { onSaved: () => void; onBack?: () => void }
             text="Открыть страницу ключей TMDB"
             trailingIcon="openInNew"
             onClick={() => open(TmdbLinks.API_SETTINGS)}
-            style={{ marginLeft: -10 }}
+            style={{ marginLeft: '-10px' }}
           />
         </Step>
         <div class="perforation" style={{ margin: '10px 0', flex: 'none' }} />
@@ -91,7 +91,7 @@ export function ApiKeyScreen(props: { onSaved: () => void; onBack?: () => void }
       </div>
 
       <div style={{ padding: '20px 16px 0' }}>
-        <label class="t-tiny muted" for="tmdb-key" style={{ display: 'block', marginBottom: 6 }}>
+        <label class="t-tiny muted" for="tmdb-key" style={{ display: 'block', marginBottom: '6px' }}>
           Ключ TMDB
         </label>
         <form
@@ -121,12 +121,12 @@ export function ApiKeyScreen(props: { onSaved: () => void; onBack?: () => void }
           </button>
         </form>
         {error && (
-          <div class="t-small error" style={{ marginTop: 6 }}>
+          <div class="t-small error" style={{ marginTop: '6px' }}>
             {error}
           </div>
         )}
       </div>
-      <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 4, padding: '12px 16px 0' }}>
+      <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '4px', padding: '12px 16px 0' }}>
         <MarqueeButton text="Проверить и сохранить" onClick={() => check()} loading={checking} />
         {offerSaveAnyway && <TextAction text="Сохранить без проверки" onClick={() => save(key.trim())} />}
       </div>
@@ -135,7 +135,7 @@ export function ApiKeyScreen(props: { onSaved: () => void; onBack?: () => void }
           <TextAction text="Использовать ключ из local.properties" onClick={() => check(devKey.current!)} />
         </div>
       )}
-      <p class="t-small muted" style={{ padding: '16px 16px 0', margin: 0 }}>
+      <p class="t-small muted" style={{ padding: '16px 16px 0', margin: '0px' }}>
         Ключ хранится только на этом устройстве и отправляется только в TMDB.
       </p>
     </div>
@@ -167,7 +167,7 @@ function useDevKey() {
 function Step(props: { n: number; text: string; children?: ComponentChildren }) {
   return (
     <div style={{ display: 'flex' }}>
-      <span class="t-number gold" style={{ width: 28, flex: 'none', fontSize: 15, display: 'inline-block' }}>
+      <span class="t-number gold" style={{ width: '28px', flex: 'none', fontSize: '15px', display: 'inline-block' }}>
         {String(props.n).padStart(2, '0')}
       </span>
       <div>

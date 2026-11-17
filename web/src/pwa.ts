@@ -12,7 +12,7 @@ export function isIos(): boolean {
   return /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
 }
 
-let waiting: ServiceWorker | null = null
+let updateReady = false
 const listeners = new Set<() => void>()
 const notify = () => listeners.forEach((l) => l())
 
@@ -25,38 +25,31 @@ export function useUpdateAvailable(): boolean {
       listeners.delete(l)
     }
   }, [])
-  return waiting !== null
+  return updateReady
 }
 
-/** Ставит скачанную новую версию и перезапускает страницу. */
+/** Перезапускает приложение на новой версии. */
 export function updateApp() {
-  if (!waiting) return
-  navigator.serviceWorker.addEventListener('controllerchange', () => location.reload(), { once: true })
-  waiting.postMessage('skipWaiting')
+  location.reload()
 }
 
 export function registerServiceWorker() {
   if (!('serviceWorker' in navigator) || import.meta.env.DEV) return
-  window.addEventListener('load', async () => {
+  // Если страница уже работала под service worker'ом, смена означает, что включилась новая версия
+  let hadController = !!navigator.serviceWorker.controller
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (hadController) {
+      updateReady = true
+      notify()
+    }
+    hadController = true
+  })
+  const start = async () => {
     try {
       const registration = await navigator.serviceWorker.register('./sw.js', { scope: './' })
-      const track = (worker: ServiceWorker | null) => {
-        if (!worker) return
-        worker.addEventListener('statechange', () => {
-          // Новая версия скачана, а страница работает на старой — предлагаем обновиться
-          if (worker.state === 'installed' && navigator.serviceWorker.controller) {
-            waiting = worker
-            notify()
-          }
-        })
-      }
-      if (registration.waiting && navigator.serviceWorker.controller) {
-        waiting = registration.waiting
-        notify()
-      }
-      // Установка новой версии могла начаться ещё до подписки на updatefound
-      track(registration.installing)
-      registration.addEventListener('updatefound', () => track(registration.installing))
+      // Старые версии ждали команды, прежде чем включиться, — даём её, если такая версия ждёт
+      registration.waiting?.postMessage('skipWaiting')
+      registration.update().catch(() => {})
       // Проверяем обновления при возвращении в приложение
       document.addEventListener('visibilitychange', () => {
         if (document.visibilityState === 'visible') registration.update().catch(() => {})
@@ -64,5 +57,7 @@ export function registerServiceWorker() {
     } catch (e) {
       console.warn('Service worker не зарегистрирован', e)
     }
-  })
+  }
+  if (document.readyState === 'complete') start()
+  else window.addEventListener('load', start, { once: true })
 }

@@ -163,7 +163,7 @@ function UpdateBar() {
   const [dismissed, setDismissed] = useState(false)
   if (!available || dismissed) return null
   return (
-    <div class="toast" style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '4px 4px 4px 14px' }}>
+    <div class="toast" style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '4px 4px 4px 14px' }}>
       <span style={{ whiteSpace: 'nowrap' }}>Вышла новая версия</span>
       <TextAction text="Обновить" onClick={updateApp} />
       <TextAction text="Позже" muted onClick={() => setDismissed(true)} />
@@ -176,14 +176,14 @@ function InstallHint() {
   const [hidden, setHidden] = useState(() => localStorage.getItem('pickture.installHintHidden') === '1')
   if (hidden || !isIos() || isStandalone()) return null
   return (
-    <div class="toast" style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 4px 8px 14px' }}>
+    <div class="toast" style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 4px 8px 14px' }}>
       <Icon name="share" size={18} class="gold" />
       <span style={{ flex: 1 }}>
         Установите Pickture: «Поделиться» → «На экран Домой». Данные в Safari и на экране «Домой» хранятся отдельно.
       </span>
       <button
         class="icon-btn press"
-        style={{ width: 36, height: 36, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+        style={{ width: '36px', height: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
         aria-label="Скрыть"
         onClick={() => {
           localStorage.setItem('pickture.installHintHidden', '1')

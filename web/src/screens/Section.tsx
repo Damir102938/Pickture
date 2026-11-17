@@ -71,7 +71,7 @@ export function SectionScreen({ section }: { section: FeedSection }) {
             canLoadMore={hasMore && !error}
             onLoadMore={loadMore}
             header={
-              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                 {(Object.keys(SORT_LABELS) as SortMode[])
                   .filter((m) => m !== 'MATCH' || !profile.isEmpty)
                   .map((m) => (

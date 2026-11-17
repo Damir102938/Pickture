@@ -32,7 +32,7 @@ export function TrailerScreen(props: { type: MediaType; id: number; video: strin
             referrerpolicy="strict-origin-when-cross-origin"
           />
         </div>
-        <div style={{ padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 12 }}>
+        <div style={{ padding: '12px 16px', display: 'flex', alignItems: 'center', gap: '12px' }}>
           <span class="t-small muted" style={{ flex: 1 }}>
             Не воспроизводится? Возможно, автор запретил встраивание или YouTube недоступен без VPN.
           </span>
@@ -55,7 +55,7 @@ export function TrailerScreen(props: { type: MediaType; id: number; video: strin
                 <div class="thumb">
                   <img src={`https://i.ytimg.com/vi/${v.key}/mqdefault.jpg`} alt="" loading="lazy" />
                 </div>
-                <div style={{ minWidth: 0 }}>
+                <div style={{ minWidth: '0px' }}>
                   <div class="t-tiny gold">
                     {videoTypeLabel(v.type)}
                     {v.language ? ` · ${v.language.toUpperCase()}` : ''}
