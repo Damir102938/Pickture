@@ -336,8 +336,7 @@ export function MarkIcon({ mark }: { mark?: UserMark }) {
   }
   let icon: IconName
   let color: string
-  if (mark.watched) [icon, color] = ['eye', 'var(--match-high)']
-  else if (mark.reaction === REACTION.LIKE) [icon, color] = ['favorite', 'var(--accent)']
+  if (mark.reaction === REACTION.LIKE || mark.watched) [icon, color] = ['favorite', 'var(--accent)']
   else if (mark.reaction === REACTION.DISLIKE) [icon, color] = ['thumbDown', 'var(--match-low)']
   else if (mark.inWatchlist) [icon, color] = ['bookmark', 'var(--gold)']
   else return null

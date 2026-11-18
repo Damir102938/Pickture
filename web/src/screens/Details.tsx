@@ -14,8 +14,8 @@ import {
   yearOf,
 } from '../core/models'
 import { userMessage } from '../core/tmdb'
-import { clearWatched, markFrom, markOf, markWatched, repository, setReaction, toggleWatchlist, useApp } from '../data/store'
-import { WatchedDialog, ratingColor } from '../ui/rating'
+import { markFrom, markOf, repository, setRating, setReaction, toggleWatchlist, useApp } from '../data/store'
+import { RefineStrip } from '../ui/rating'
 import {
   BackButton,
   ErrorBox,
@@ -90,7 +90,6 @@ function DetailsContent(props: { details: TitleDetails; mark: UserMark; match: n
   // На ПК картинки крупнее
   const desktop = useDesktop()
   const toggleReaction = (r: number) => setReaction(t, mark.reaction === r ? REACTION.NONE : r)
-  const [watchedDialog, setWatchedDialog] = useState(false)
   const trailer = details.videos[0]
   const more = details.videos.length - 1
   const tagline = details.tagline?.trim().replace(/^[«»"“”„]+|[«»"“”„]+$/g, '').trim()
@@ -133,14 +132,14 @@ function DetailsContent(props: { details: TitleDetails; mark: UserMark; match: n
         <div class="stamp-row">
           <StampButton
             icon={mark.reaction === REACTION.LIKE ? 'favorite' : 'favoriteBorder'}
-            label="Нравится"
+            label={mark.reaction === REACTION.LIKE && mark.rating > 0 ? `Нравится · ${mark.rating}` : 'Нравится'}
             selected={mark.reaction === REACTION.LIKE}
             color="var(--accent)"
             onClick={() => toggleReaction(REACTION.LIKE)}
           />
           <StampButton
             icon={mark.reaction === REACTION.DISLIKE ? 'thumbDown' : 'thumbDownOutline'}
-            label="Не моё"
+            label={mark.reaction === REACTION.DISLIKE && mark.rating > 0 ? `Не моё · ${mark.rating}` : 'Не моё'}
             selected={mark.reaction === REACTION.DISLIKE}
             color="var(--match-low)"
             onClick={() => toggleReaction(REACTION.DISLIKE)}
@@ -152,29 +151,8 @@ function DetailsContent(props: { details: TitleDetails; mark: UserMark; match: n
             color="var(--gold)"
             onClick={() => toggleWatchlist(t)}
           />
-          <StampButton
-            icon={mark.watched ? 'eye' : 'eyeOutline'}
-            label={mark.watched && mark.rating > 0 ? `Оценка ${mark.rating}` : 'Смотрел'}
-            selected={mark.watched}
-            color={mark.rating > 0 ? ratingColor(mark.rating) : 'var(--match-high)'}
-            onClick={() => setWatchedDialog(true)}
-          />
         </div>
-        {watchedDialog && (
-          <WatchedDialog
-            mark={mark}
-            isSeries={t.type === 'tv'}
-            onSave={(rating, date) => {
-              setWatchedDialog(false)
-              markWatched(t, rating, date)
-            }}
-            onClear={() => {
-              setWatchedDialog(false)
-              clearWatched(t)
-            }}
-            onDismiss={() => setWatchedDialog(false)}
-          />
-        )}
+        {mark.reaction !== REACTION.NONE && <RefineStrip mark={mark} onRate={(r) => setRating(t, r)} />}
         {trailer && (
           <div style={{ marginTop: '12px' }}>
             <MarqueeButton

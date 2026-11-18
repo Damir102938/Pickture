@@ -51,16 +51,16 @@ private val ru = Locale.forLanguageTag("ru")
 private val monthTitle = DateTimeFormatter.ofPattern("LLLL yyyy", ru)
 private val dayMonth = DateTimeFormatter.ofPattern("d MMMM", ru)
 
-/** Дневник: просмотренное по месяцам, с оценками и датами. Сверху — короткая статистика. */
+/** Дневник: всё, что понравилось или оценено, по месяцам. Дата — день отметки. Сверху — короткая статистика. */
 @Composable
 fun DiaryList(watched: List<UserTitleEntity>, onOpen: (Title) -> Unit) {
     val groups = remember(watched) {
         watched
-            .sortedWith(compareByDescending<UserTitleEntity> { parseDate(it.watchedAt) ?: LocalDate.MIN }.thenByDescending { it.updatedAt })
-            .groupBy { parseDate(it.watchedAt)?.let(YearMonth::from) }
+            .sortedWith(compareByDescending<UserTitleEntity> { it.diaryDate }.thenByDescending { it.updatedAt })
+            .groupBy { YearMonth.from(it.diaryDate) }
     }
     val rated = watched.filter { it.userRating > 0 }
-    val thisYear = watched.count { parseDate(it.watchedAt)?.year == LocalDate.now().year }
+    val thisYear = watched.count { it.diaryDate.year == LocalDate.now().year }
 
     LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = 24.dp)) {
         item {
@@ -80,7 +80,7 @@ fun DiaryList(watched: List<UserTitleEntity>, onOpen: (Title) -> Unit) {
         }
         groups.forEach { (month, items) ->
             item(key = "m:$month") {
-                val title = month?.format(monthTitle)?.replaceFirstChar { it.uppercase() } ?: "Без даты"
+                val title = month.format(monthTitle).replaceFirstChar { it.uppercase() }
                 SectionHeader("$title · ${items.size}")
             }
             items(items, key = { "${it.type}:${it.id}" }) { entity ->
@@ -92,7 +92,7 @@ fun DiaryList(watched: List<UserTitleEntity>, onOpen: (Title) -> Unit) {
 
 @Composable
 private fun DiaryRow(entity: UserTitleEntity, onClick: () -> Unit) {
-    val date = parseDate(entity.watchedAt)
+    val date = entity.diaryDate
     Row(
         Modifier
             .padding(horizontal = 16.dp, vertical = 4.dp)
@@ -114,7 +114,7 @@ private fun DiaryRow(entity: UserTitleEntity, onClick: () -> Unit) {
                 listOfNotNull(
                     if (entity.mediaType == MediaType.TV) "Сериал" else "Фильм",
                     year?.toString(),
-                    date?.format(dayMonth)?.let { "смотрел $it" },
+                    "отмечено " + date.format(dayMonth),
                 ).joinToString(" · "),
                 style = MaterialTheme.typography.bodySmall, color = Brand.TextMuted, maxLines = 1,
             )

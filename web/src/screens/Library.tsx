@@ -1,5 +1,5 @@
 import { useMemo, useRef, useState } from 'preact/hooks'
-import { type UserTitleEntity, entityToTitle } from '../core/entities'
+import { type UserTitleEntity, entityToTitle, inDiary } from '../core/entities'
 import { markOf, useApp } from '../data/store'
 import { MessageBox, ScreenHeader, SectionHeader, TicketToggle, TitleGrid } from '../ui/components'
 import { Icon, type IconName } from '../ui/icons'
@@ -16,22 +16,16 @@ const LIBRARY_TABS: { label: string; icon: IconName; empty: string; filter: (e: 
     filter: (e) => e.inWatchlist,
   },
   {
-    label: 'Дневник',
-    icon: 'eye',
-    empty: 'Отмечайте «Смотрел» в карточке фильма и ставьте оценку от 1 до 10 — так рекомендации станут точнее',
-    filter: (e) => e.watched,
-  },
-  {
     label: 'Нравится',
     icon: 'favorite',
-    empty: 'Ставьте лайки — так рекомендации станут точнее',
-    filter: (e) => e.reaction > 0,
+    empty: 'Ставьте «Нравится» в карточке фильма и при желании уточняйте оценку — так рекомендации станут точнее',
+    filter: inDiary,
   },
   {
     label: 'Не моё',
     icon: 'thumbDown',
-    empty: 'Здесь будет то, что вам не понравилось',
-    filter: (e) => e.reaction < 0,
+    empty: 'Здесь будет то, что вам не интересно',
+    filter: (e) => e.reaction < 0 && !e.watched && e.userRating === 0,
   },
 ]
 
@@ -72,7 +66,7 @@ export function LibraryScreen() {
         style={{ margin: '10px 16px 0' }}
       />
       <div key={tab} class={tab === prev ? '' : tab > prev ? 'slide-right' : 'slide-left'}>
-        {current.label === 'Дневник' && shown.length > 0 ? (
+        {current.filter === inDiary && shown.length > 0 ? (
           <>
             <div style={{ paddingTop: '12px' }}>
               <SectionHeader title={current.label} />

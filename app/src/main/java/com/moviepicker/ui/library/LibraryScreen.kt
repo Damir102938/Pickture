@@ -55,9 +55,15 @@ private enum class LibraryTab(
     val filter: (UserTitleEntity) -> Boolean,
 ) {
     WATCHLIST("Хочу посмотреть", Icons.Filled.Bookmark, "Добавляйте сюда фильмы, и мы сообщим, когда они выйдут", { it.inWatchlist }),
-    DIARY("Дневник", Icons.Filled.Visibility, "Отмечайте «Смотрел» в карточке фильма и ставьте оценку от 1 до 10 — так рекомендации станут точнее", { it.watched }),
-    LIKED("Нравится", Icons.Filled.Favorite, "Ставьте лайки — так рекомендации станут точнее", { it.reaction > 0 }),
-    DISLIKED("Не моё", Icons.Filled.ThumbDown, "Здесь будет то, что вам не понравилось", { it.reaction < 0 }),
+    DIARY(
+        "Нравится", Icons.Filled.Favorite,
+        "Ставьте «Нравится» в карточке фильма и при желании уточняйте оценку — так рекомендации станут точнее",
+        { it.inDiary },
+    ),
+    DISLIKED(
+        "Не моё", Icons.Filled.ThumbDown, "Здесь будет то, что вам не интересно",
+        { it.reaction < 0 && !it.watched && it.userRating == 0 },
+    ),
 }
 
 @Composable

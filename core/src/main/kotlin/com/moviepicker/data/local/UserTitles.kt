@@ -7,6 +7,9 @@ import com.moviepicker.domain.Title
 import com.moviepicker.domain.parseDate
 import kotlinx.coroutines.flow.Flow
 import kotlinx.serialization.Serializable
+import java.time.Instant
+import java.time.LocalDate
+import java.time.ZoneId
 
 /**
  * Всё, что пользователь отметил: лайк/дизлайк, «хочу посмотреть».
@@ -44,13 +47,21 @@ data class UserTitleEntity(
     val watched: Boolean = false,
     /** Оценка пользователя 1..10, 0 — без оценки. Для вкуса важнее лайка. */
     val userRating: Int = 0,
-    /** Дата просмотра, ISO (yyyy-MM-dd). */
+    /** День, когда поставлены лайк или оценка (ISO yyyy-MM-dd); ставится автоматически. */
     val watchedAt: String? = null,
     /** Последняя вышедшая серия, о которой пользователь знает: сезон * 1000 + номер серии. */
     val lastKnownEpisode: Int = 0,
 ) {
     val mediaType: MediaType get() = MediaType.fromPath(type) ?: MediaType.MOVIE
     val reactionValue: Reaction get() = Reaction.of(reaction)
+
+    /** В дневнике — всё, что понравилось или оценено. */
+    val inDiary: Boolean get() = reaction > 0 || watched || userRating > 0
+
+    /** Дата записи в дневнике; у старых отметок без даты — день последнего изменения. */
+    val diaryDate: LocalDate
+        get() = parseDate(watchedAt)
+            ?: Instant.ofEpochMilli(updatedAt).atZone(ZoneId.systemDefault()).toLocalDate()
 
     /** Пустая запись — ни оценки, ни списка, ни просмотра: её можно удалить. */
     val isBlank: Boolean get() = reaction == 0 && !inWatchlist && !watched

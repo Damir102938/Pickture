@@ -1380,18 +1380,13 @@ img {
   z-index: 1;
 }
 
-.rating-picker {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
 .rating-row {
   display: grid;
   grid-template-columns: repeat(5, 1fr);
   gap: 6px;
 }
 .rating-seat {
-  aspect-ratio: 1.15;
+  aspect-ratio: 1.6;
   border-radius: 5px;
   border: 1px dashed var(--perf);
   color: var(--muted);
@@ -1408,31 +1403,25 @@ img {
   color: var(--bg);
   animation: punch 420ms var(--spring);
 }
-.rating-caption {
-  text-align: center;
-  padding-top: 2px;
-}
-
-.date-field {
-  position: relative;
-  margin-top: 16px;
-  min-height: 48px;
-  padding: 6px 12px;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  border: 1px solid var(--perf);
+.refine-strip {
+  margin-top: 8px;
+  padding: 10px 14px 12px;
   border-radius: 6px;
+  background: var(--ticket);
+  animation: refine-in 220ms ease-out;
 }
-.date-field input {
-  position: absolute;
-  left: 0;
-  bottom: 0;
-  width: 100%;
-  height: 100%;
-  opacity: 0;
-  pointer-events: none;
-  border: 0;
+@keyframes refine-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+}
+.refine-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+  text-transform: uppercase;
 }
 
 .diary-stats {

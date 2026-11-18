@@ -106,7 +106,7 @@ fun SettingsScreen(onBack: () -> Unit, onEditOnboarding: () -> Unit, onEditApiKe
             if (settings.notificationsEnabled) {
                 SwitchRow(
                     title = "Каждая новая серия",
-                    description = "Для сериалов из «Хочу посмотреть» и просмотренных, которым вы поставили 7+ или лайк",
+                    description = "Для сериалов из «Хочу посмотреть» и тех, что вам понравились",
                     checked = settings.notifyEpisodes,
                     onChange = { scope.launch { container.settings.setNotifyEpisodes(it) } },
                 )

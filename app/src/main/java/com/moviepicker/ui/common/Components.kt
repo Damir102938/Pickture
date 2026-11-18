@@ -100,7 +100,6 @@ fun MarkIcon(mark: UserMark?, modifier: Modifier = Modifier) {
     }
     val (icon, tint) = when {
         mark == null -> return
-        mark.watched -> Icons.Filled.Visibility to Brand.MatchHigh
         mark.reaction == Reaction.LIKE -> Icons.Filled.Favorite to Brand.Accent
         mark.reaction == Reaction.DISLIKE -> Icons.Filled.ThumbDown to Brand.MatchLow
         mark.inWatchlist -> Icons.Filled.Bookmark to Brand.Gold

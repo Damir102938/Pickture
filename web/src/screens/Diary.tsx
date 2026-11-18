@@ -1,5 +1,5 @@
 import { useMemo } from 'preact/hooks'
-import { type UserTitleEntity, entityKey, entityMediaType, entityToTitle } from '../core/entities'
+import { type UserTitleEntity, diaryDate, entityKey, entityMediaType, entityToTitle } from '../core/entities'
 import { RatingScale, today } from '../core/models'
 import { Poster, SectionHeader, TicketField } from '../ui/components'
 import { push } from '../ui/nav'
@@ -8,8 +8,7 @@ import { RatingBadge, ratingColor } from '../ui/rating'
 const MONTHS = ['Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь', 'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь']
 const MONTHS_GEN = ['января', 'февраля', 'марта', 'апреля', 'мая', 'июня', 'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря']
 
-function monthTitle(iso: string | null): string {
-  if (!iso) return 'Без даты'
+function monthTitle(iso: string): string {
   const [y, m] = iso.split('-').map(Number)
   return `${MONTHS[m - 1]} ${y}`
 }
@@ -19,15 +18,13 @@ function dayMonth(iso: string): string {
   return `${d} ${MONTHS_GEN[m - 1]}`
 }
 
-/** Дневник: просмотренное по месяцам, с оценками и датами. Сверху — короткая статистика. */
+/** Дневник: всё, что понравилось или оценено, по месяцам. Дата — день отметки. Сверху — короткая статистика. */
 export function DiaryList({ watched }: { watched: UserTitleEntity[] }) {
   const groups = useMemo(() => {
-    const sorted = [...watched].sort(
-      (a, b) => (b.watchedAt ?? '').localeCompare(a.watchedAt ?? '') || b.updatedAt - a.updatedAt,
-    )
+    const sorted = [...watched].sort((a, b) => diaryDate(b).localeCompare(diaryDate(a)) || b.updatedAt - a.updatedAt)
     const map = new Map<string, UserTitleEntity[]>()
     for (const e of sorted) {
-      const key = e.watchedAt ? e.watchedAt.slice(0, 7) : ''
+      const key = diaryDate(e).slice(0, 7)
       const list = map.get(key) ?? []
       list.push(e)
       map.set(key, list)
@@ -36,7 +33,7 @@ export function DiaryList({ watched }: { watched: UserTitleEntity[] }) {
   }, [watched])
   const rated = watched.filter((e) => e.userRating > 0)
   const year = today().slice(0, 4)
-  const thisYear = watched.filter((e) => e.watchedAt?.startsWith(year)).length
+  const thisYear = watched.filter((e) => diaryDate(e).startsWith(year)).length
   const average = rated.length ? (rated.reduce((s, e) => s + e.userRating, 0) / rated.length).toFixed(1) : '—'
 
   return (
@@ -47,8 +44,8 @@ export function DiaryList({ watched }: { watched: UserTitleEntity[] }) {
         <TicketField label="Средняя" value={average} color="var(--gold)" />
       </div>
       {groups.map(([month, items]) => (
-        <section key={month || 'none'}>
-          <SectionHeader title={`${monthTitle(month ? month + '-01' : null)} · ${items.length}`} />
+        <section key={month}>
+          <SectionHeader title={`${monthTitle(month + '-01')} · ${items.length}`} />
           <div class="diary-list">
             {items.map((e) => (
               <DiaryRow key={entityKey(e)} entity={e} />
@@ -63,7 +60,7 @@ export function DiaryList({ watched }: { watched: UserTitleEntity[] }) {
 function DiaryRow({ entity }: { entity: UserTitleEntity }) {
   const type = entityMediaType(entity)
   const year = entity.date?.slice(0, 4)
-  const meta = [type === 'tv' ? 'Сериал' : 'Фильм', year, entity.watchedAt ? `смотрел ${dayMonth(entity.watchedAt)}` : null]
+  const meta = [type === 'tv' ? 'Сериал' : 'Фильм', year, `отмечено ${dayMonth(diaryDate(entity))}`]
     .filter(Boolean)
     .join(' · ')
   return (

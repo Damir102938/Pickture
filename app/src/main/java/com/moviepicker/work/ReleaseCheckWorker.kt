@@ -49,9 +49,9 @@ class ReleaseCheckWorker(context: Context, params: WorkerParameters) : Coroutine
         val repository = container.repository
         val notifyEpisodes = container.settings.current().notifyEpisodes
         val today = LocalDate.now()
-        // Фильмы и сериалы из «Хочу посмотреть», а также сериалы, которые человек смотрел и оценил хорошо
+        // Фильмы и сериалы из «Хочу посмотреть», а также сериалы, которые понравились
         val tracked = repository.allMarked().filter {
-            it.inWatchlist || (it.mediaType == MediaType.TV && it.watched && it.tasteWeight() > 0)
+            it.inWatchlist || (it.mediaType == MediaType.TV && it.tasteWeight() > 0)
         }
         for (entity in tracked) {
             if (!entity.featuresLoaded) {
@@ -85,7 +85,7 @@ class ReleaseCheckWorker(context: Context, params: WorkerParameters) : Coroutine
                 MediaType.TV -> {
                     val last = details.lastEpisode ?: continue
                     if (last.date?.isAfter(today) == true) continue
-                    val from = if (entity.inWatchlist) "Сериал из списка «Хочу посмотреть»" else "Сериал, который вы смотрели"
+                    val from = if (entity.inWatchlist) "Сериал из списка «Хочу посмотреть»" else "Сериал, который вам понравился"
                     val known = entity.lastKnownEpisode
                     when {
                         last.season > entity.lastKnownSeason -> {

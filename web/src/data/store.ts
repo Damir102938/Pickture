@@ -136,40 +136,54 @@ function save(entity: UserTitleEntity) {
   return done
 }
 
+/**
+ * Лайк или «Не моё» в одно касание. Лайк означает «смотрел, понравилось»: тайтл попадает в дневник
+ * и уходит из «Хочу посмотреть». «Не моё» без оценки — «не интересно», в дневник не попадает.
+ * Оценка сохраняется, только если подходит к реакции (лайк — 6..10, «Не моё» — 1..5).
+ * Дата в дневнике ставится сама — день, когда поставлен лайк. Повторяет TitleRepository.setReaction.
+ */
 export function setReaction(title: Title, reaction: number) {
   const base = state.titles.get(titleKey(title)) ?? entityFromTitle(title)
-  return save({ ...base, reaction, fromOnboarding: false, updatedAt: Date.now() })
-}
-
-export function toggleWatchlist(title: Title) {
-  const base = state.titles.get(titleKey(title)) ?? entityFromTitle(title)
-  return save({ ...base, inWatchlist: !base.inWatchlist, updatedAt: Date.now() })
-}
-
-/**
- * Отмечает просмотр. [rating] 1..10 (0 — без оценки) заодно ставит лайк или дизлайк
- * (7+ — лайк, 1–4 — дизлайк). Просмотренное уходит из «Хочу посмотреть».
- */
-export function markWatched(title: Title, rating: number, date: string) {
-  const base = state.titles.get(titleKey(title)) ?? entityFromTitle(title)
-  const userRating = Math.min(10, Math.max(0, Math.trunc(rating)))
+  const userRating = RatingScale.range(reaction).includes(base.userRating) ? base.userRating : 0
+  const watched = reaction === REACTION.LIKE || userRating > 0
+  const sameMark = base.reaction === reaction && base.watchedAt != null
   return save({
     ...base,
-    watched: true,
+    reaction,
     userRating,
-    watchedAt: date,
-    reaction: userRating > 0 ? RatingScale.reactionFor(userRating) : base.reaction,
-    inWatchlist: false,
+    watched,
+    watchedAt: !watched ? null : sameMark ? base.watchedAt : today(),
+    inWatchlist: base.inWatchlist && !watched,
     fromOnboarding: false,
     updatedAt: Date.now(),
   })
 }
 
-/** Убирает отметку о просмотре вместе с оценкой; лайк или дизлайк остаются. */
-export function clearWatched(title: Title) {
-  const base = state.titles.get(titleKey(title))
-  if (!base) return Promise.resolve()
-  return save({ ...base, watched: false, userRating: 0, watchedAt: null, updatedAt: Date.now() })
+/**
+ * Уточнение оценки 1..10 (0 — снять уточнение). Реакция следует за оценкой: 6+ — лайк, 1–5 — «Не моё».
+ * Дата в дневнике — день, когда поставлена оценка.
+ */
+export function setRating(title: Title, rating: number) {
+  const base = state.titles.get(titleKey(title)) ?? entityFromTitle(title)
+  const userRating = Math.min(10, Math.max(0, Math.trunc(rating)))
+  const reaction = userRating > 0 ? RatingScale.reactionFor(userRating) : base.reaction
+  const watched = reaction > 0 || userRating > 0
+  const changed = userRating !== base.userRating || base.watchedAt == null
+  return save({
+    ...base,
+    userRating,
+    reaction,
+    watched,
+    watchedAt: !watched ? null : changed ? today() : base.watchedAt,
+    inWatchlist: base.inWatchlist && !watched,
+    fromOnboarding: false,
+    updatedAt: Date.now(),
+  })
+}
+
+export function toggleWatchlist(title: Title) {
+  const base = state.titles.get(titleKey(title)) ?? entityFromTitle(title)
+  return save({ ...base, inWatchlist: !base.inWatchlist, updatedAt: Date.now() })
 }
 
 /** Сохраняет результат онбординга, заменяя прошлые стартовые лайки. */

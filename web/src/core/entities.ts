@@ -1,4 +1,4 @@
-import { type MediaType, type Title, mediaTypeFromPath, parseDate } from './models'
+import { type MediaType, type Title, formatIso, mediaTypeFromPath, parseDate } from './models'
 
 /**
  * Всё, что пользователь отметил: лайк/дизлайк, «хочу посмотреть».
@@ -96,6 +96,12 @@ export function entityFromTitle(t: Title): UserTitleEntity {
 
 /** Пустая запись — ни оценки, ни списка, ни просмотра: её можно удалить. */
 export const isBlank = (e: UserTitleEntity) => e.reaction === 0 && !e.inWatchlist && !e.watched
+
+/** В дневнике — всё, что понравилось или оценено. */
+export const inDiary = (e: UserTitleEntity) => e.reaction > 0 || e.watched || e.userRating > 0
+
+/** Дата записи в дневнике (YYYY-MM-DD); у старых отметок без даты — день последнего изменения. */
+export const diaryDate = (e: UserTitleEntity) => e.watchedAt ?? formatIso(new Date(e.updatedAt))
 
 export function entityToTitle(e: UserTitleEntity): Title {
   return {

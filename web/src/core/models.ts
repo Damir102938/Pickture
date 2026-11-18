@@ -49,8 +49,9 @@ export interface UserMark {
 }
 
 /**
- * Насколько оценка влияет на вкус: 9–10 — сильный плюс, 7–8 — плюс, 5–6 — нейтрально, 1–4 — минус.
- * Лайк без оценки весит как «9», дизлайк — как «2». Повторяет RatingScale из core/.../domain/Models.kt.
+ * Оценка уточняет лайк или «Не моё»: после лайка можно выбрать 6–10, после «Не моё» — 1–5.
+ * Вес для вкуса: 9–10 — сильный плюс, 7–8 — плюс, 6 и 5 — почти нейтрально, 1–4 — минус.
+ * Лайк без уточнения весит как «9», «Не моё» — как «2». Повторяет RatingScale из core/.../domain/Models.kt.
  */
 export const RatingScale = {
   weight(rating: number): number {
@@ -63,6 +64,10 @@ export const RatingScale = {
         return 0.65
       case 7:
         return 0.35
+      case 6:
+        return 0.15
+      case 5:
+        return -0.25
       case 4:
         return -0.5
       case 3:
@@ -76,11 +81,18 @@ export const RatingScale = {
     }
   },
 
-  /** Лайк или дизлайк, который ставится вместе с оценкой. */
+  /** Реакция, которая следует за оценкой: 6+ — лайк, 1–5 — «Не моё». */
   reactionFor(rating: number): number {
-    if (rating >= 7) return REACTION.LIKE
-    if (rating >= 1 && rating <= 4) return REACTION.DISLIKE
+    if (rating >= 6) return REACTION.LIKE
+    if (rating >= 1 && rating <= 5) return REACTION.DISLIKE
     return REACTION.NONE
+  },
+
+  /** Какие оценки можно выбрать для уточнения: после лайка 6–10, после «Не моё» 1–5. */
+  range(reaction: number): number[] {
+    if (reaction === REACTION.LIKE) return [6, 7, 8, 9, 10]
+    if (reaction === REACTION.DISLIKE) return [1, 2, 3, 4, 5]
+    return []
   },
 
   label(rating: number): string {

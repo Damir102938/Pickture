@@ -150,40 +150,56 @@ class TitleRepository(
 
     suspend fun allMarked(): List<UserTitleEntity> = dao.getAll()
 
+    /**
+     * Лайк или «Не моё» в одно касание. Лайк означает «смотрел, понравилось»: тайтл попадает в дневник
+     * и уходит из «Хочу посмотреть». «Не моё» без оценки — «не интересно», в дневник не попадает.
+     * Оценка сохраняется, только если подходит к реакции (лайк — 6..10, «Не моё» — 1..5).
+     * Дата в дневнике ставится сама — день, когда поставлен лайк.
+     */
     suspend fun setReaction(title: Title, reaction: Reaction) {
         val base = dao.get(title.type.path, title.id) ?: UserTitleEntity.from(title)
-        save(base.copy(reaction = reaction.value, fromOnboarding = false, updatedAt = System.currentTimeMillis()))
-    }
-
-    suspend fun toggleWatchlist(title: Title) {
-        val base = dao.get(title.type.path, title.id) ?: UserTitleEntity.from(title)
-        save(base.copy(inWatchlist = !base.inWatchlist, updatedAt = System.currentTimeMillis()))
-    }
-
-    /**
-     * Отмечает просмотр. [rating] 1..10 (0 — без оценки) заодно ставит лайк или дизлайк
-     * (7+ — лайк, 1–4 — дизлайк). Просмотренное уходит из «Хочу посмотреть».
-     */
-    suspend fun markWatched(title: Title, rating: Int, date: LocalDate) {
-        val base = dao.get(title.type.path, title.id) ?: UserTitleEntity.from(title)
-        val reaction = if (rating > 0) RatingScale.reactionFor(rating).value else base.reaction
+        val rating = base.userRating.takeIf { it in RatingScale.range(reaction) } ?: 0
+        val watched = reaction == Reaction.LIKE || rating > 0
+        val sameMark = base.reaction == reaction.value && base.watchedAt != null
         save(
             base.copy(
-                watched = true,
-                userRating = rating.coerceIn(0, 10),
-                watchedAt = date.toString(),
-                reaction = reaction,
-                inWatchlist = false,
+                reaction = reaction.value,
+                userRating = rating,
+                watched = watched,
+                watchedAt = if (!watched) null else if (sameMark) base.watchedAt else LocalDate.now().toString(),
+                inWatchlist = base.inWatchlist && !watched,
                 fromOnboarding = false,
                 updatedAt = System.currentTimeMillis(),
             )
         )
     }
 
-    /** Убирает отметку о просмотре вместе с оценкой; лайк или дизлайк остаются. */
-    suspend fun clearWatched(title: Title) {
-        val base = dao.get(title.type.path, title.id) ?: return
-        save(base.copy(watched = false, userRating = 0, watchedAt = null, updatedAt = System.currentTimeMillis()))
+    /**
+     * Уточнение оценки 1..10 (0 — снять уточнение). Реакция следует за оценкой: 6+ — лайк, 1–5 — «Не моё».
+     * Дата в дневнике — день, когда поставлена оценка.
+     */
+    suspend fun setRating(title: Title, rating: Int) {
+        val base = dao.get(title.type.path, title.id) ?: UserTitleEntity.from(title)
+        val r = rating.coerceIn(0, 10)
+        val reaction = if (r > 0) RatingScale.reactionFor(r).value else base.reaction
+        val watched = reaction > 0 || r > 0
+        val changed = r != base.userRating || base.watchedAt == null
+        save(
+            base.copy(
+                userRating = r,
+                reaction = reaction,
+                watched = watched,
+                watchedAt = if (!watched) null else if (changed) LocalDate.now().toString() else base.watchedAt,
+                inWatchlist = base.inWatchlist && !watched,
+                fromOnboarding = false,
+                updatedAt = System.currentTimeMillis(),
+            )
+        )
+    }
+
+    suspend fun toggleWatchlist(title: Title) {
+        val base = dao.get(title.type.path, title.id) ?: UserTitleEntity.from(title)
+        save(base.copy(inWatchlist = !base.inWatchlist, updatedAt = System.currentTimeMillis()))
     }
 
     private suspend fun save(entity: UserTitleEntity) {

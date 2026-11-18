@@ -58,10 +58,15 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import com.moviepicker.ui.design.DateField
-import com.moviepicker.ui.design.RatingPicker
+import com.moviepicker.ui.design.RatingRow
+import com.moviepicker.domain.RatingScale
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import com.moviepicker.ui.design.TextAction
-import com.moviepicker.ui.design.TicketDatePicker
 import com.moviepicker.ui.design.TicketDialog
 import com.moviepicker.ui.design.ratingColor
 import androidx.compose.material3.Button
@@ -147,14 +152,9 @@ class DetailsViewModel(private val container: AppContainer, private val key: Tit
         viewModelScope.launch { container.repository.toggleWatchlist(t) }
     }
 
-    fun markWatched(rating: Int, date: LocalDate) {
+    fun rate(rating: Int) {
         val t = title ?: return
-        viewModelScope.launch { container.repository.markWatched(t, rating, date) }
-    }
-
-    fun clearWatched() {
-        val t = title ?: return
-        viewModelScope.launch { container.repository.clearWatched(t) }
+        viewModelScope.launch { container.repository.setRating(t, rating) }
     }
 }
 
@@ -170,7 +170,6 @@ fun DetailsScreen(
     val mark by vm.mark.collectAsStateWithLifecycle()
     val profile by vm.profile.collectAsStateWithLifecycle()
     val marks by vm.marks.collectAsStateWithLifecycle()
-    var watchedDialog by rememberSaveable { mutableStateOf(false) }
 
     Box(Modifier.fillMaxSize()) {
         when (val s = state) {
@@ -184,64 +183,12 @@ fun DetailsScreen(
                 marks = marks,
                 onReact = vm::react,
                 onWatchlist = vm::toggleWatchlist,
-                onWatched = { watchedDialog = true },
+                onRate = vm::rate,
                 onOpen = onOpen,
                 onTrailer = onTrailer,
             )
         }
         BackButton(onBack, Modifier.statusBarsPadding().padding(10.dp), onImage = true)
-    }
-    if (watchedDialog) {
-        WatchedDialog(
-            mark = mark,
-            isSeries = key.type == MediaType.TV,
-            onSave = { rating, date -> vm.markWatched(rating, date); watchedDialog = false },
-            onClear = { vm.clearWatched(); watchedDialog = false },
-            onDismiss = { watchedDialog = false },
-        )
-    }
-}
-
-/** «Посмотрел»: оценка 1–10 и дата просмотра. */
-@Composable
-private fun WatchedDialog(
-    mark: UserMark,
-    isSeries: Boolean,
-    onSave: (Int, LocalDate) -> Unit,
-    onClear: () -> Unit,
-    onDismiss: () -> Unit,
-) {
-    var rating by rememberSaveable { mutableIntStateOf(mark.rating) }
-    var dateDay by rememberSaveable { mutableLongStateOf((mark.watchedAt ?: LocalDate.now()).toEpochDay()) }
-    var pickDate by remember { mutableStateOf(false) }
-    val date = LocalDate.ofEpochDay(dateDay)
-    TicketDialog(
-        title = if (mark.watched) "Ваша оценка" else if (isSeries) "Посмотрел сериал" else "Посмотрел фильм",
-        onDismiss = onDismiss,
-        confirm = { MarqueeButton("Сохранить", { onSave(rating, date) }) },
-        dismiss = {
-            if (mark.watched) TextAction("Убрать", onClear, color = Brand.TextMuted)
-            else TextAction("Отмена", onDismiss, color = Brand.TextMuted)
-        },
-    ) {
-        Column {
-            RatingPicker(rating, onSelect = { rating = it })
-            Spacer(Modifier.height(16.dp))
-            DateField(
-                "Дата просмотра",
-                if (date == LocalDate.now()) "Сегодня" else date.formatFull(),
-                onClick = { pickDate = true },
-                modifier = Modifier.fillMaxWidth(),
-            )
-            Spacer(Modifier.height(10.dp))
-            Text(
-                "Оценка 9–10 сильнее всего влияет на рекомендации, 1–4 — отталкивает от похожего.",
-                style = MaterialTheme.typography.bodySmall, color = Brand.TextMuted,
-            )
-        }
-    }
-    if (pickDate) {
-        TicketDatePicker(date, onPick = { dateDay = it.toEpochDay() }, onDismiss = { pickDate = false })
     }
 }
 
@@ -255,7 +202,7 @@ private fun DetailsContent(
     marks: Map<TitleKey, UserMark>,
     onReact: (Reaction) -> Unit,
     onWatchlist: () -> Unit,
-    onWatched: () -> Unit,
+    onRate: (Int) -> Unit,
     onOpen: (Title) -> Unit,
     onTrailer: (videoKey: String) -> Unit,
 ) {
@@ -321,7 +268,7 @@ private fun DetailsContent(
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     StampButton(
                         icon = if (mark.reaction == Reaction.LIKE) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder,
-                        label = "Нравится",
+                        label = if (mark.reaction == Reaction.LIKE && mark.rating > 0) "Нравится · ${mark.rating}" else "Нравится",
                         selected = mark.reaction == Reaction.LIKE,
                         color = Brand.Accent,
                         onClick = { onReact(Reaction.LIKE) },
@@ -329,7 +276,7 @@ private fun DetailsContent(
                     )
                     StampButton(
                         icon = if (mark.reaction == Reaction.DISLIKE) Icons.Filled.ThumbDown else Icons.Outlined.ThumbDown,
-                        label = "Не моё",
+                        label = if (mark.reaction == Reaction.DISLIKE && mark.rating > 0) "Не моё · ${mark.rating}" else "Не моё",
                         selected = mark.reaction == Reaction.DISLIKE,
                         color = Brand.MatchLow,
                         onClick = { onReact(Reaction.DISLIKE) },
@@ -343,14 +290,13 @@ private fun DetailsContent(
                         onClick = onWatchlist,
                         modifier = Modifier.weight(1f),
                     )
-                    StampButton(
-                        icon = if (mark.watched) Icons.Filled.Visibility else Icons.Outlined.Visibility,
-                        label = if (mark.watched && mark.rating > 0) "Оценка ${mark.rating}" else "Смотрел",
-                        selected = mark.watched,
-                        color = if (mark.rating > 0) ratingColor(mark.rating) else Brand.MatchHigh,
-                        onClick = onWatched,
-                        modifier = Modifier.weight(1f),
-                    )
+                }
+                AnimatedVisibility(
+                    visible = mark.reaction != Reaction.NONE,
+                    enter = expandVertically(tween(220)) + fadeIn(tween(220)),
+                    exit = shrinkVertically(tween(200)) + fadeOut(tween(150)),
+                ) {
+                    RefineStrip(mark, onRate, Modifier.padding(top = 8.dp))
                 }
                 details.videos.firstOrNull()?.let { trailer ->
                     Spacer(Modifier.height(12.dp))
@@ -507,4 +453,42 @@ private fun statusName(status: String) = when (status) {
     "Planned" -> "запланирован"
     "Pilot" -> "пилот"
     else -> status
+}
+
+/**
+ * Уточнение под кнопками: появляется после лайка или «Не моё».
+ * Оценку можно не трогать — лайк в одно касание уже сохранён. Дата в дневнике ставится сама.
+ */
+@Composable
+private fun RefineStrip(mark: UserMark, onRate: (Int) -> Unit, modifier: Modifier = Modifier) {
+    val liked = mark.reaction == Reaction.LIKE
+    Column(
+        modifier.fillMaxWidth()
+            .clip(TicketShape(notchRadius = 5.dp, cornerRadius = 6.dp))
+            .background(Brand.Ticket)
+            .padding(horizontal = 14.dp, vertical = 10.dp),
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text("УТОЧНИТЬ ОЦЕНКУ", style = PkType.tiny, color = Brand.TextMuted)
+            Spacer(Modifier.weight(1f))
+            Text(
+                when {
+                    mark.rating > 0 -> "${mark.rating} из 10 · ${RatingScale.label(mark.rating)}"
+                    liked -> "Просто нравится"
+                    else -> "Не интересно"
+                }.uppercase(),
+                style = PkType.tiny,
+                color = if (mark.rating > 0) ratingColor(mark.rating) else Brand.TextMuted,
+            )
+        }
+        Spacer(Modifier.height(8.dp))
+        RatingRow(RatingScale.range(mark.reaction), mark.rating, onRate)
+        if (!liked && mark.rating == 0) {
+            Spacer(Modifier.height(6.dp))
+            Text(
+                "Не смотрели — просто не будем предлагать похожее. Смотрели — поставьте оценку.",
+                style = MaterialTheme.typography.bodySmall, color = Brand.TextMuted,
+            )
+        }
+    }
 }

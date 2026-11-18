@@ -51,8 +51,9 @@ data class UserMark(
 )
 
 /**
- * Насколько оценка влияет на вкус: 9–10 — сильный плюс, 7–8 — плюс, 5–6 — нейтрально, 1–4 — минус.
- * Лайк без оценки весит как «9», дизлайк — как «2».
+ * Оценка уточняет лайк или «Не моё»: после лайка можно выбрать 6–10, после «Не моё» — 1–5.
+ * Вес для вкуса: 9–10 — сильный плюс, 7–8 — плюс, 6 и 5 — почти нейтрально, 1–4 — минус.
+ * Лайк без уточнения весит как «9», «Не моё» — как «2».
  */
 object RatingScale {
     fun weight(rating: Int): Double = when (rating) {
@@ -60,7 +61,8 @@ object RatingScale {
         9 -> 1.0
         8 -> 0.65
         7 -> 0.35
-        5, 6 -> 0.0
+        6 -> 0.15
+        5 -> -0.25
         4 -> -0.5
         3 -> -0.75
         2 -> -1.0
@@ -70,9 +72,16 @@ object RatingScale {
 
     /** Лайк или дизлайк, который ставится вместе с оценкой. */
     fun reactionFor(rating: Int): Reaction = when {
-        rating >= 7 -> Reaction.LIKE
-        rating in 1..4 -> Reaction.DISLIKE
+        rating >= 6 -> Reaction.LIKE
+        rating in 1..5 -> Reaction.DISLIKE
         else -> Reaction.NONE
+    }
+
+    /** Какие оценки можно выбрать для уточнения реакции. */
+    fun range(reaction: Reaction): IntRange = when (reaction) {
+        Reaction.LIKE -> 6..10
+        Reaction.DISLIKE -> 1..5
+        Reaction.NONE -> IntRange.EMPTY
     }
 
     fun label(rating: Int): String = when (rating) {
