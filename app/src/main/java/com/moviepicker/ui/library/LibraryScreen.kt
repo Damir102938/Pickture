@@ -5,6 +5,12 @@ import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.ThumbDown
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.rememberScrollState
+import com.moviepicker.ui.design.SeatTag
 import com.moviepicker.ui.design.SectionHeader
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.tween
@@ -34,6 +40,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
@@ -48,31 +55,80 @@ import com.moviepicker.domain.Title
 import com.moviepicker.ui.common.MessageBox
 import com.moviepicker.ui.common.TitleGrid
 
+/** Сортировка списков в «Моих». */
+enum class LibrarySort(val label: String) {
+    DATE("По дате"),
+    MATCH("По совпадению"),
+    TMDB("По TMDB"),
+    MY_RATING("По моей оценке"),
+}
+
 private enum class LibraryTab(
     val label: String,
     val icon: ImageVector,
     val empty: String,
+    val sorts: List<LibrarySort>,
     val filter: (UserTitleEntity) -> Boolean,
 ) {
-    WATCHLIST("Хочу посмотреть", Icons.Filled.Bookmark, "Добавляйте сюда фильмы, и мы сообщим, когда они выйдут", { it.inWatchlist }),
+    WATCHLIST(
+        "Хочу посмотреть", Icons.Filled.Bookmark, "Добавляйте сюда фильмы, и мы сообщим, когда они выйдут",
+        listOf(LibrarySort.DATE, LibrarySort.MATCH, LibrarySort.TMDB),
+        { it.inWatchlist },
+    ),
     DIARY(
         "Нравится", Icons.Filled.Favorite,
         "Ставьте «Нравится» в карточке фильма и при желании уточняйте оценку — так рекомендации станут точнее",
+        listOf(LibrarySort.DATE, LibrarySort.MY_RATING),
         { it.inDiary },
     ),
     DISLIKED(
-        "Не моё", Icons.Filled.ThumbDown, "Здесь будет то, что вам не интересно",
-        { it.reaction < 0 && !it.watched && it.userRating == 0 },
+        "Не моё", Icons.Filled.ThumbDown, "Здесь будет то, что вам не интересно или не понравилось (оценки 1–5)",
+        listOf(LibrarySort.DATE, LibrarySort.MY_RATING),
+        { it.isDisliked },
     ),
 }
 
+/** Порядок «по дате» уже задан базой (свежие отметки сверху), остальные — по убыванию, без значения — в конце. */
+private fun List<UserTitleEntity>.sortedFor(sort: LibrarySort, matchOf: (Title) -> Int?): List<UserTitleEntity> = when (sort) {
+    LibrarySort.DATE -> this
+    LibrarySort.MATCH -> sortedByDescending { matchOf(it.toTitle()) ?: -1 }
+    LibrarySort.TMDB -> sortedByDescending { if (it.voteCount > 0) it.rating else -1.0 }
+    LibrarySort.MY_RATING -> sortedByDescending { it.userRating }
+}
+
+/** Ряд «мест в зале» для выбора сортировки. */
 @Composable
-fun LibraryScreen(onOpen: (Title) -> Unit, onSettings: () -> Unit) {
+private fun SortRow(options: List<LibrarySort>, selected: LibrarySort, onSelect: (LibrarySort) -> Unit, modifier: Modifier = Modifier) {
+    Row(
+        modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        options.forEach { option ->
+            SeatTag(option.label, selected = option == selected, onClick = { onSelect(option) })
+        }
+    }
+}
+
+@Composable
+fun LibraryScreen(
+    onOpen: (Title) -> Unit,
+    onSettings: () -> Unit,
+    openTab: Int? = null,
+    onTabOpened: () -> Unit = {},
+) {
     val container = LocalContext.current.container
     val entities by container.repository.observeAll().collectAsStateWithLifecycle(emptyList())
     val profile by container.tasteProfile.collectAsStateWithLifecycle()
     val marks by container.marks.collectAsStateWithLifecycle()
     var tabIndex by rememberSaveable { mutableIntStateOf(0) }
+    LaunchedEffect(openTab) {
+        if (openTab != null) {
+            tabIndex = openTab
+            onTabOpened()
+        }
+    }
+    // Своя сортировка у каждой вкладки; по умолчанию — по дате
+    val sortIndex = LibraryTab.entries.map { tab -> rememberSaveable(tab.name) { mutableIntStateOf(0) } }
 
     Column(Modifier.fillMaxSize().statusBarsPadding()) {
         ScreenHeader("Мои списки") {
@@ -103,9 +159,18 @@ fun LibraryScreen(onOpen: (Title) -> Unit, onSettings: () -> Unit) {
             label = "libraryTab",
         ) { index ->
             val tab = LibraryTab.entries[index]
-            val shown = remember(entities, index) { entities.filter(tab.filter).map { it.toTitle() } }
+            val sort = tab.sorts[sortIndex[index].intValue.coerceIn(tab.sorts.indices)]
+            val filtered = remember(entities, index, sort, profile) {
+                entities.filter(tab.filter).sortedFor(sort, profile::matchPercent)
+            }
+            val shown = remember(filtered) { filtered.map { it.toTitle() } }
+            val sortRow: @Composable () -> Unit = {
+                if (filtered.size > 1) {
+                    SortRow(tab.sorts, sort, onSelect = { sortIndex[index].intValue = tab.sorts.indexOf(it) })
+                }
+            }
             if (tab == LibraryTab.DIARY && shown.isNotEmpty()) {
-                DiaryList(entities.filter(tab.filter), onOpen)
+                DiaryList(filtered, onOpen, byRating = sort == LibrarySort.MY_RATING, sortBar = sortRow)
             } else if (shown.isEmpty()) {
                 Column {
                     SectionHeader(tab.label, Modifier.padding(top = 12.dp))
@@ -117,7 +182,12 @@ fun LibraryScreen(onOpen: (Title) -> Unit, onSettings: () -> Unit) {
                     matchOf = profile::matchPercent,
                     markOf = { marks[it] },
                     onOpen = onOpen,
-                    header = { SectionHeader(tab.label, inset = 0.dp) },
+                    header = {
+                        Column {
+                            SectionHeader(tab.label, inset = 0.dp)
+                            sortRow()
+                        }
+                    },
                 )
             }
         }

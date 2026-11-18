@@ -1829,3 +1829,18 @@ html.desktop .scroll {
     transition-duration: 1ms !important;
   }
 }
+
+/* Сортировка в «Моих»: ряд «мест в зале» под заголовком */
+.sort-row {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  padding: 2px 0 6px;
+}
+.sort-row::-webkit-scrollbar {
+  display: none;
+}
+.diary > .sort-row {
+  padding: 0 16px 6px;
+}

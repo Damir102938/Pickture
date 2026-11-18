@@ -21,6 +21,8 @@ data class Settings(
     val notificationPermissionAsked: Boolean = false,
     /** Ключ TMDB, введённый пользователем. */
     val tmdbApiKey: String = "",
+    /** Показать подсказку «оцените отмеченные фильмы» — один раз после первого стартового экрана. */
+    val ratingHintPending: Boolean = false,
 )
 
 /** Настройки приложения поверх DataStore (на Android — файл приложения, на ПК — файл в профиле). */
@@ -35,6 +37,7 @@ class SettingsStore(private val dataStore: DataStore<Preferences>) {
         val permissionAsked = booleanPreferencesKey("notification_permission_asked")
         val notifiedNew = stringPreferencesKey("notified_new_titles")
         val tmdbApiKey = stringPreferencesKey("tmdb_api_key")
+        val ratingHintPending = booleanPreferencesKey("rating_hint_pending")
     }
 
     val settings: Flow<Settings> = dataStore.data.map { it.toSettings() }
@@ -49,6 +52,7 @@ class SettingsStore(private val dataStore: DataStore<Preferences>) {
         notifyEpisodes = this[Keys.notifyEpisodes] ?: true,
         notificationPermissionAsked = this[Keys.permissionAsked] ?: false,
         tmdbApiKey = this[Keys.tmdbApiKey].orEmpty(),
+        ratingHintPending = this[Keys.ratingHintPending] ?: false,
     )
 
     suspend fun completeOnboarding(genres: Set<Int>) = dataStore.edit {
@@ -69,6 +73,8 @@ class SettingsStore(private val dataStore: DataStore<Preferences>) {
 
     suspend fun setNotificationPermissionAsked() =
         dataStore.edit { it[Keys.permissionAsked] = true }
+
+    suspend fun setRatingHintPending(value: Boolean) = dataStore.edit { it[Keys.ratingHintPending] = value }
 
     suspend fun setTmdbApiKey(key: String) = dataStore.edit { it[Keys.tmdbApiKey] = key.trim() }
 

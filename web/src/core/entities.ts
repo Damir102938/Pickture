@@ -44,6 +44,8 @@ export interface Settings {
   useOnboarding: boolean
   favoriteGenres: number[]
   tmdbApiKey: string
+  /** Показать подсказку «оцените отмеченное» — один раз после первого стартового экрана. */
+  ratingHintPending: boolean
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -51,6 +53,7 @@ export const DEFAULT_SETTINGS: Settings = {
   useOnboarding: true,
   favoriteGenres: [],
   tmdbApiKey: '',
+  ratingHintPending: false,
 }
 
 export const entityMediaType = (e: UserTitleEntity): MediaType => mediaTypeFromPath(e.type) ?? 'movie'
@@ -97,8 +100,13 @@ export function entityFromTitle(t: Title): UserTitleEntity {
 /** Пустая запись — ни оценки, ни списка, ни просмотра: её можно удалить. */
 export const isBlank = (e: UserTitleEntity) => e.reaction === 0 && !e.inWatchlist && !e.watched
 
-/** В дневнике — всё, что понравилось или оценено. */
-export const inDiary = (e: UserTitleEntity) => e.reaction > 0 || e.watched || e.userRating > 0
+/** Вкладка «Не моё»: «не интересно» и всё, что оценено на 1–5. */
+export const isDisliked = (e: UserTitleEntity) => e.reaction < 0 || (e.userRating >= 1 && e.userRating <= 5)
+
+/**
+ * Вкладка «Нравится» (дневник): лайки и оценки 6–10. Отметки «Смотрел» из 0.6.0 без оценки и реакции — тоже здесь.
+ */
+export const inDiary = (e: UserTitleEntity) => !isDisliked(e) && (e.reaction > 0 || e.userRating >= 6 || e.watched)
 
 /** Дата записи в дневнике (YYYY-MM-DD); у старых отметок без даты — день последнего изменения. */
 export const diaryDate = (e: UserTitleEntity) => e.watchedAt ?? formatIso(new Date(e.updatedAt))

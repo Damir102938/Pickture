@@ -98,6 +98,7 @@ function setSettings(patch: Partial<Settings>) {
 
 export const setApiKey = (key: string) => setSettings({ tmdbApiKey: key.trim() })
 export const setUseOnboarding = (value: boolean) => setSettings({ useOnboarding: value })
+export const setRatingHintPending = (value: boolean) => setSettings({ ratingHintPending: value })
 export const completeOnboarding = (genres: number[]) =>
   setSettings({ onboardingDone: true, favoriteGenres: Array.from(new Set(genres)) })
 
@@ -188,6 +189,7 @@ export function toggleWatchlist(title: Title) {
 
 /** Сохраняет результат онбординга, заменяя прошлые стартовые лайки. */
 export async function applyOnboarding(genres: number[], likes: Title[]) {
+  const firstRun = !state.settings.onboardingDone
   const titles = new Map(state.titles)
   for (const [key, e] of titles) {
     if (!e.fromOnboarding) continue
@@ -206,6 +208,8 @@ export async function applyOnboarding(genres: number[], likes: Title[]) {
   }
   await commit(titles)
   await completeOnboarding(genres)
+  // После первого стартового экрана подскажем, что отмеченное можно оценить точнее
+  if (firstRun && likes.length > 0) await setSettings({ ratingHintPending: true })
   toLoad.forEach((e) => loadFeatures(e.type, e.id).catch(() => {}))
 }
 

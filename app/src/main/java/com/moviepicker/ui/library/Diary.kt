@@ -53,11 +53,25 @@ private val dayMonth = DateTimeFormatter.ofPattern("d MMMM", ru)
 
 /** Дневник: всё, что понравилось или оценено, по месяцам. Дата — день отметки. Сверху — короткая статистика. */
 @Composable
-fun DiaryList(watched: List<UserTitleEntity>, onOpen: (Title) -> Unit) {
-    val groups = remember(watched) {
-        watched
-            .sortedWith(compareByDescending<UserTitleEntity> { it.diaryDate }.thenByDescending { it.updatedAt })
-            .groupBy { YearMonth.from(it.diaryDate) }
+fun DiaryList(
+    watched: List<UserTitleEntity>,
+    onOpen: (Title) -> Unit,
+    byRating: Boolean = false,
+    sortBar: @Composable () -> Unit = {},
+) {
+    // По дате — группы по месяцам; по оценке — группы «10 · Шедевр», «9 · Отлично»…, без оценки в конце
+    val groups: List<Pair<String, List<UserTitleEntity>>> = remember(watched, byRating) {
+        if (byRating) {
+            watched
+                .sortedWith(compareByDescending<UserTitleEntity> { it.userRating }.thenByDescending { it.diaryDate })
+                .groupBy { it.userRating }
+                .map { (r, list) -> (if (r > 0) "$r · ${RatingScale.label(r)}" else "Без оценки") to list }
+        } else {
+            watched
+                .sortedWith(compareByDescending<UserTitleEntity> { it.diaryDate }.thenByDescending { it.updatedAt })
+                .groupBy { YearMonth.from(it.diaryDate) }
+                .map { (month, list) -> month.format(monthTitle).replaceFirstChar { it.uppercase() } to list }
+        }
     }
     val rated = watched.filter { it.userRating > 0 }
     val thisYear = watched.count { it.diaryDate.year == LocalDate.now().year }
@@ -78,9 +92,11 @@ fun DiaryList(watched: List<UserTitleEntity>, onOpen: (Title) -> Unit) {
                 )
             }
         }
-        groups.forEach { (month, items) ->
-            item(key = "m:$month") {
-                val title = month.format(monthTitle).replaceFirstChar { it.uppercase() }
+        item(key = "sort") {
+            Box(Modifier.padding(horizontal = 16.dp)) { sortBar() }
+        }
+        groups.forEach { (title, items) ->
+            item(key = "g:$title") {
                 SectionHeader("$title · ${items.size}")
             }
             items(items, key = { "${it.type}:${it.id}" }) { entity ->

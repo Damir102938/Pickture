@@ -55,8 +55,14 @@ data class UserTitleEntity(
     val mediaType: MediaType get() = MediaType.fromPath(type) ?: MediaType.MOVIE
     val reactionValue: Reaction get() = Reaction.of(reaction)
 
-    /** В дневнике — всё, что понравилось или оценено. */
-    val inDiary: Boolean get() = reaction > 0 || watched || userRating > 0
+    /**
+     * Вкладка «Нравится» (дневник): лайки и оценки 6–10. Отметки «Смотрел» из 0.6.0 без оценки и реакции — тоже здесь.
+     */
+    val inDiary: Boolean
+        get() = !isDisliked && (reaction > 0 || userRating >= 6 || watched)
+
+    /** Вкладка «Не моё»: «не интересно» и всё, что оценено на 1–5. */
+    val isDisliked: Boolean get() = reaction < 0 || userRating in 1..5
 
     /** Дата записи в дневнике; у старых отметок без даты — день последнего изменения. */
     val diaryDate: LocalDate

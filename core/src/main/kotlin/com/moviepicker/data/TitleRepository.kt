@@ -236,6 +236,7 @@ class TitleRepository(
 
     /** Сохраняет результат онбординга, заменяя прошлые стартовые лайки. */
     suspend fun applyOnboarding(genres: Set<Int>, likes: List<Title>) {
+        val firstRun = !settings.current().onboardingDone
         dao.getAll().filter { it.fromOnboarding }.forEach {
             if (it.inWatchlist || it.watched) dao.upsert(it.copy(reaction = 0, fromOnboarding = false))
             else dao.delete(it.type, it.id)
@@ -251,6 +252,8 @@ class TitleRepository(
             }
         }
         settings.completeOnboarding(genres)
+        // После первого стартового экрана подскажем, что отмеченное можно оценить точнее
+        if (firstRun && likes.isNotEmpty()) settings.setRatingHintPending(true)
     }
 
     /**

@@ -36,6 +36,23 @@ import com.moviepicker.ui.design.TicketNavBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.width
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
+import com.moviepicker.ui.design.Brand
+import com.moviepicker.ui.design.MarqueeButton
+import com.moviepicker.ui.design.PkType
+import com.moviepicker.ui.design.TextAction
+import com.moviepicker.ui.design.TicketDialog
+import kotlinx.coroutines.launch
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
@@ -109,6 +126,22 @@ fun MovieApp(startWithOnboarding: Boolean, deepLink: TitleKey?, onDeepLinkHandle
     AskNotificationPermissionOnce(active = route == Routes.HOME)
     UpdatePrompt()
 
+    // Подсказка после первого стартового экрана: отмеченное пока без оценки — где и как её поставить
+    val container = LocalContext.current.container
+    val appSettings by container.settings.settings.collectAsStateWithLifecycle(initialValue = null)
+    val hintScope = rememberCoroutineScope()
+    var libraryTabRequest by remember { mutableStateOf<Int?>(null) }
+    if (appSettings?.ratingHintPending == true && route == Routes.HOME) {
+        RatingHintDialog(
+            onLater = { hintScope.launch { container.settings.setRatingHintPending(false) } },
+            onOpen = {
+                hintScope.launch { container.settings.setRatingHintPending(false) }
+                libraryTabRequest = LIBRARY_LIKED_TAB
+                nav.navigateToTab(Routes.LIBRARY)
+            },
+        )
+    }
+
     val openTitle: (Title) -> Unit = { nav.navigate(Routes.details(it.key)) }
 
     Scaffold(
@@ -155,7 +188,12 @@ fun MovieApp(startWithOnboarding: Boolean, deepLink: TitleKey?, onDeepLinkHandle
                 SearchScreen(onOpen = openTitle)
             }
             composable(Routes.LIBRARY) {
-                LibraryScreen(onOpen = openTitle, onSettings = { nav.navigate(Routes.SETTINGS) })
+                LibraryScreen(
+                    onOpen = openTitle,
+                    onSettings = { nav.navigate(Routes.SETTINGS) },
+                    openTab = libraryTabRequest,
+                    onTabOpened = { libraryTabRequest = null },
+                )
             }
             composable(Routes.API_KEY) {
                 ApiKeyScreen(onSaved = { nav.popBackStack() }, onBack = { nav.popBackStack() })
@@ -273,6 +311,45 @@ private fun AskNotificationPermissionOnce(active: Boolean) {
         ) {
             container.settings.setNotificationPermissionAsked()
             launcher.launch(Manifest.permission.POST_NOTIFICATIONS)
+        }
+    }
+}
+
+/** Вкладка «Нравится» в «Моих». */
+private const val LIBRARY_LIKED_TAB = 1
+
+@Composable
+private fun RatingHintDialog(onLater: () -> Unit, onOpen: () -> Unit) {
+    TicketDialog(
+        title = "Оцените отмеченное",
+        onDismiss = onLater,
+        confirm = { MarqueeButton("Открыть «Нравится»", onOpen) },
+        dismiss = { TextAction("Позже", onLater, color = Brand.TextMuted) },
+    ) {
+        Column {
+            Text(
+                "Фильмы, которые вы отметили на стартовом экране, сейчас просто «нравятся» — без оценки. " +
+                    "Если уточнить оценку, рекомендации станут точнее.",
+                style = MaterialTheme.typography.bodyMedium,
+            )
+            Spacer(Modifier.height(12.dp))
+            Text("КАК ЭТО СДЕЛАТЬ", style = PkType.tiny, color = Brand.Gold)
+            Spacer(Modifier.height(6.dp))
+            listOf(
+                "Откройте «Мои» → вкладку с сердцем «Нравится».",
+                "Нажмите на фильм.",
+                "Под кнопкой «Нравится» выберите оценку от 6 до 10.",
+            ).forEachIndexed { i, step ->
+                Row(Modifier.padding(vertical = 3.dp)) {
+                    Text("%02d".format(i + 1), style = PkType.number, color = Brand.Accent, modifier = Modifier.width(26.dp))
+                    Text(step, style = MaterialTheme.typography.bodyMedium)
+                }
+            }
+            Spacer(Modifier.height(10.dp))
+            Text(
+                "Так же можно оценить любой фильм прямо в его карточке.",
+                style = MaterialTheme.typography.bodySmall, color = Brand.TextMuted,
+            )
         }
     }
 }

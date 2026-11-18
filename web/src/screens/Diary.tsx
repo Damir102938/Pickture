@@ -1,3 +1,4 @@
+import type { ComponentChildren } from 'preact'
 import { useMemo } from 'preact/hooks'
 import { type UserTitleEntity, diaryDate, entityKey, entityMediaType, entityToTitle } from '../core/entities'
 import { RatingScale, today } from '../core/models'
@@ -19,18 +20,26 @@ function dayMonth(iso: string): string {
 }
 
 /** Дневник: всё, что понравилось или оценено, по месяцам. Дата — день отметки. Сверху — короткая статистика. */
-export function DiaryList({ watched }: { watched: UserTitleEntity[] }) {
+export function DiaryList(props: { watched: UserTitleEntity[]; byRating?: boolean; sortBar?: ComponentChildren }) {
+  const { watched, byRating = false } = props
+  // По дате — группы по месяцам; по оценке — группы «10 · Шедевр», «9 · Отлично»…, без оценки в конце
   const groups = useMemo(() => {
-    const sorted = [...watched].sort((a, b) => diaryDate(b).localeCompare(diaryDate(a)) || b.updatedAt - a.updatedAt)
+    const sorted = byRating
+      ? [...watched].sort((a, b) => b.userRating - a.userRating || diaryDate(b).localeCompare(diaryDate(a)))
+      : [...watched].sort((a, b) => diaryDate(b).localeCompare(diaryDate(a)) || b.updatedAt - a.updatedAt)
     const map = new Map<string, UserTitleEntity[]>()
     for (const e of sorted) {
-      const key = diaryDate(e).slice(0, 7)
+      const key = byRating
+        ? e.userRating > 0
+          ? `${e.userRating} · ${RatingScale.label(e.userRating)}`
+          : 'Без оценки'
+        : monthTitle(diaryDate(e).slice(0, 7) + '-01')
       const list = map.get(key) ?? []
       list.push(e)
       map.set(key, list)
     }
     return [...map.entries()]
-  }, [watched])
+  }, [watched, byRating])
   const rated = watched.filter((e) => e.userRating > 0)
   const year = today().slice(0, 4)
   const thisYear = watched.filter((e) => diaryDate(e).startsWith(year)).length
@@ -43,9 +52,10 @@ export function DiaryList({ watched }: { watched: UserTitleEntity[] }) {
         <TicketField label="В этом году" value={String(thisYear)} />
         <TicketField label="Средняя" value={average} color="var(--gold)" />
       </div>
-      {groups.map(([month, items]) => (
-        <section key={month}>
-          <SectionHeader title={`${monthTitle(month + '-01')} · ${items.length}`} />
+      {props.sortBar}
+      {groups.map(([title, items]) => (
+        <section key={title}>
+          <SectionHeader title={`${title} · ${items.length}`} />
           <div class="diary-list">
             {items.map((e) => (
               <DiaryRow key={entityKey(e)} entity={e} />

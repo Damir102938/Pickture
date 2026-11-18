@@ -1,17 +1,17 @@
 import { useEffect, useRef, useState } from 'preact/hooks'
-import { useApp } from './data/store'
+import { setRatingHintPending, useApp } from './data/store'
 import { isIos, isStandalone, updateApp, useUpdateAvailable } from './pwa'
 import { ApiKeyScreen } from './screens/ApiKey'
 import { DetailsScreen } from './screens/Details'
 import { HomeScreen } from './screens/Home'
-import { LibraryScreen } from './screens/Library'
+import { LIBRARY_LIKED_TAB, LibraryScreen, requestLibraryTab } from './screens/Library'
 import { OnboardingScreen } from './screens/Onboarding'
 import { RecsScreen } from './screens/Recs'
 import { SearchScreen } from './screens/Search'
 import { SectionScreen } from './screens/Section'
 import { SettingsScreen } from './screens/Settings'
 import { TrailerScreen } from './screens/Trailer'
-import { MarqueeLoader, TextAction, ToastHost } from './ui/components'
+import { MarqueeButton, MarqueeLoader, TextAction, TicketDialog, ToastHost } from './ui/components'
 import { useSwipeBack } from './ui/gestures'
 import { Icon, type IconName } from './ui/icons'
 import { useDesktop } from './ui/layout'
@@ -91,6 +91,7 @@ function Main() {
     <>
       {desktop ? <DesktopMain /> : <MobileMain />}
       <InstallHint />
+      <RatingHint />
       <UpdateBar />
       <ToastHost />
     </>
@@ -295,5 +296,54 @@ function InstallHint() {
         <Icon name="close" size={18} />
       </button>
     </div>
+  )
+}
+
+/** Подсказка после первого стартового экрана: отмеченное пока без оценки — где и как её поставить. Как в Android. */
+function RatingHint() {
+  const pending = useApp((s) => s.settings.ratingHintPending)
+  const nav = useNav()
+  if (!pending || nav.tab !== 'home' || nav.stack.length > 0) return null
+  const later = () => setRatingHintPending(false)
+  const open = () => {
+    setRatingHintPending(false)
+    requestLibraryTab(LIBRARY_LIKED_TAB)
+    selectTab('library')
+  }
+  const steps = [
+    'Откройте «Мои» → вкладку с сердцем «Нравится».',
+    'Нажмите на фильм.',
+    'Под кнопкой «Нравится» выберите оценку от 6 до 10.',
+  ]
+  return (
+    <TicketDialog
+      title="Оцените отмеченное"
+      onDismiss={later}
+      actions={
+        <>
+          <TextAction text="Позже" muted onClick={later} />
+          <MarqueeButton text="Открыть «Нравится»" onClick={open} />
+        </>
+      }
+    >
+      <p style={{ margin: '0 0 12px' }}>
+        Фильмы, которые вы отметили на стартовом экране, сейчас просто «нравятся» — без оценки. Если уточнить оценку,
+        рекомендации станут точнее.
+      </p>
+      <div class="t-tiny gold" style={{ marginBottom: '6px' }}>
+        Как это сделать
+      </div>
+      {steps.map((step, i) => (
+        <div key={i} style={{ display: 'flex', gap: '8px', padding: '3px 0' }}>
+          <span class="t-number accent" style={{ width: '22px', flex: 'none' }}>
+            {String(i + 1).padStart(2, '0')}
+          </span>
+          <span>{step}</span>
+        </div>
+      ))}
+      <div class="t-small muted" style={{ marginTop: '10px' }}>
+        Так же можно оценить любой фильм прямо в его карточке.
+      </div>
+    </TicketDialog>
   )
 }
