@@ -56,7 +56,7 @@ class RecommendationEngine(
         val entities = repository.allMarked()
         val currentSettings = settings.current()
         val profile = TasteProfile.build(entities, currentSettings)
-        val key = (entities.map { listOf(it.type, it.id, it.reaction, it.inWatchlist) } to
+        val key = (entities.map { listOf(it.type, it.id, it.reaction, it.inWatchlist, it.watched, it.userRating) } to
             listOf(currentSettings.useOnboarding, currentSettings.favoriteGenres)).hashCode()
         val fresh = System.currentTimeMillis() - cacheTime < CACHE_TTL_MS
         if (!force && key == cacheKey && fresh) return cache
@@ -71,7 +71,7 @@ class RecommendationEngine(
     /** Догружает признаки для оценённых тайтлов, если раньше не получилось (например, не было сети). */
     private suspend fun ensureFeatures() {
         repository.allMarked()
-            .filter { !it.featuresLoaded && it.reaction != 0 }
+            .filter { !it.featuresLoaded && (it.reaction != 0 || it.userRating > 0) }
             .take(10)
             .forEach { runCatching { repository.loadFeatures(it.type, it.id) } }
     }
@@ -91,14 +91,15 @@ class RecommendationEngine(
         }
 
         profile.liked.take(10).forEachIndexed { index, liked ->
-            val weight = 1.0 - index * 0.05
+            // Чем выше оценка, тем сильнее голос: «10» тянет больше, чем просто лайк
+            val weight = (1.0 - index * 0.05) * liked.tasteWeight()
             source({ repository.tmdbRecommendations(TitleKey(liked.mediaType, liked.id)) }) {
                 candidate(it).add(weight, "Похоже на «${liked.name}»")
             }
         }
         profile.disliked.take(5).forEach { disliked ->
             source({ repository.tmdbRecommendations(TitleKey(disliked.mediaType, disliked.id)) }) {
-                candidate(it).negative += 1.0
+                candidate(it).negative += -disliked.tasteWeight()
             }
         }
 

@@ -15,6 +15,7 @@ import com.moviepicker.container
 import com.moviepicker.data.FeedSection
 import com.moviepicker.domain.MediaType
 import com.moviepicker.domain.TitleKey
+import com.moviepicker.domain.tasteWeight
 import retrofit2.HttpException
 import java.io.IOException
 import java.time.LocalDate
@@ -22,7 +23,7 @@ import java.util.concurrent.TimeUnit
 
 /**
  * Фоновая проверка дважды в сутки:
- *  - вышел ли фильм или новый сезон из «Хочу посмотреть»;
+ *  - вышел ли фильм онлайн, новый сезон или новая серия из «Хочу посмотреть» (и просмотренных сериалов);
  *  - появились ли свежие релизы, хорошо совпадающие со вкусом.
  */
 class ReleaseCheckWorker(context: Context, params: WorkerParameters) : CoroutineWorker(context, params) {
@@ -46,8 +47,13 @@ class ReleaseCheckWorker(context: Context, params: WorkerParameters) : Coroutine
 
     private suspend fun checkWatchlist(container: AppContainer) {
         val repository = container.repository
+        val notifyEpisodes = container.settings.current().notifyEpisodes
         val today = LocalDate.now()
-        for (entity in repository.allMarked().filter { it.inWatchlist }) {
+        // Фильмы и сериалы из «Хочу посмотреть», а также сериалы, которые человек смотрел и оценил хорошо
+        val tracked = repository.allMarked().filter {
+            it.inWatchlist || (it.mediaType == MediaType.TV && it.watched && it.tasteWeight() > 0)
+        }
+        for (entity in tracked) {
             if (!entity.featuresLoaded) {
                 // Сначала запоминаем текущее состояние, иначе уведомим о том, что уже вышло
                 repository.loadFeatures(entity.type, entity.id)
@@ -57,6 +63,7 @@ class ReleaseCheckWorker(context: Context, params: WorkerParameters) : Coroutine
             val details = repository.details(key)
             when (entity.mediaType) {
                 MediaType.MOVIE -> {
+                    // Цифровой релиз — тип 4 в release_dates TMDB, прокат — типы 2 и 3
                     val digitalOut = details.digitalDate?.let { !it.isAfter(today) } == true
                     val theatricalOut = details.theatricalDate?.let { !it.isAfter(today) } == true
                     if (digitalOut && entity.releaseNotifyStage < 2) {
@@ -77,14 +84,30 @@ class ReleaseCheckWorker(context: Context, params: WorkerParameters) : Coroutine
                 }
                 MediaType.TV -> {
                     val last = details.lastEpisode ?: continue
-                    val aired = last.date?.isAfter(today) != true
-                    if (aired && last.season > entity.lastKnownSeason) {
-                        val text = if (last.season <= 1) "Вышел сериал «${entity.name}»"
-                        else "Вышел ${last.season}-й сезон «${entity.name}»"
-                        Notifications.showWatchlist(
-                            applicationContext, key, text, "Сериал из списка «Хочу посмотреть»"
-                        )
-                        repository.updateEntity(entity.copy(lastKnownSeason = last.season))
+                    if (last.date?.isAfter(today) == true) continue
+                    val from = if (entity.inWatchlist) "Сериал из списка «Хочу посмотреть»" else "Сериал, который вы смотрели"
+                    val known = entity.lastKnownEpisode
+                    when {
+                        last.season > entity.lastKnownSeason -> {
+                            val text = if (last.season <= 1) "Вышел сериал «${entity.name}»"
+                            else "Вышел ${last.season}-й сезон «${entity.name}»"
+                            Notifications.showWatchlist(applicationContext, key, text, from)
+                            repository.updateEntity(entity.copy(lastKnownSeason = last.season, lastKnownEpisode = last.code))
+                        }
+                        // Запись из прошлой версии: просто запоминаем, на какой серии сериал сейчас
+                        known == 0 -> repository.updateEntity(entity.copy(lastKnownEpisode = last.code))
+                        last.code > known -> {
+                            if (notifyEpisodes) {
+                                val sameSeason = last.season == known / 1000
+                                val fresh = if (sameSeason) last.number - known % 1000 else 1
+                                val title = if (fresh > 1) "Новые серии «${entity.name}»" else "Новая серия «${entity.name}»"
+                                val episode = "${last.season} сезон, ${last.number} серия" +
+                                    (last.name?.takeIf { it.isNotBlank() && !it.startsWith("Эпизод") && !it.startsWith("Episode") }
+                                        ?.let { " — «$it»" } ?: "")
+                                Notifications.showWatchlist(applicationContext, key, title, "$episode. $from")
+                            }
+                            repository.updateEntity(entity.copy(lastKnownEpisode = last.code))
+                        }
                     }
                 }
             }

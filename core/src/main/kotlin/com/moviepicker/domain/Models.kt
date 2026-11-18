@@ -44,7 +44,51 @@ enum class Reaction(val value: Int) {
 data class UserMark(
     val reaction: Reaction = Reaction.NONE,
     val inWatchlist: Boolean = false,
+    val watched: Boolean = false,
+    /** Оценка 1..10, 0 — без оценки. */
+    val rating: Int = 0,
+    val watchedAt: LocalDate? = null,
 )
+
+/**
+ * Насколько оценка влияет на вкус: 9–10 — сильный плюс, 7–8 — плюс, 5–6 — нейтрально, 1–4 — минус.
+ * Лайк без оценки весит как «9», дизлайк — как «2».
+ */
+object RatingScale {
+    fun weight(rating: Int): Double = when (rating) {
+        10 -> 1.25
+        9 -> 1.0
+        8 -> 0.65
+        7 -> 0.35
+        5, 6 -> 0.0
+        4 -> -0.5
+        3 -> -0.75
+        2 -> -1.0
+        1 -> -1.25
+        else -> 0.0
+    }
+
+    /** Лайк или дизлайк, который ставится вместе с оценкой. */
+    fun reactionFor(rating: Int): Reaction = when {
+        rating >= 7 -> Reaction.LIKE
+        rating in 1..4 -> Reaction.DISLIKE
+        else -> Reaction.NONE
+    }
+
+    fun label(rating: Int): String = when (rating) {
+        10 -> "Шедевр"
+        9 -> "Отлично"
+        8 -> "Очень хорошо"
+        7 -> "Хорошо"
+        6 -> "Неплохо"
+        5 -> "Средне"
+        4 -> "Слабо"
+        3 -> "Плохо"
+        2 -> "Очень плохо"
+        1 -> "Ужасно"
+        else -> "Без оценки"
+    }
+}
 
 data class CastMember(val id: Int, val name: String, val character: String?, val photoPath: String?)
 
@@ -61,7 +105,10 @@ data class Video(val key: String, val name: String, val type: String, val langua
         }
 }
 
-data class Episode(val season: Int, val number: Int, val date: LocalDate?, val name: String?)
+data class Episode(val season: Int, val number: Int, val date: LocalDate?, val name: String?) {
+    /** Порядковый код для сравнения: сезон * 1000 + номер серии. */
+    val code: Int get() = season * 1000 + number
+}
 
 data class TitleDetails(
     val title: Title,

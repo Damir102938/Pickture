@@ -12,6 +12,7 @@ import com.moviepicker.domain.CastMember
 import com.moviepicker.domain.Episode
 import com.moviepicker.domain.Genres
 import com.moviepicker.domain.MediaType
+import com.moviepicker.domain.RatingScale
 import com.moviepicker.domain.Reaction
 import com.moviepicker.domain.Title
 import com.moviepicker.domain.TitleDetails
@@ -159,8 +160,34 @@ class TitleRepository(
         save(base.copy(inWatchlist = !base.inWatchlist, updatedAt = System.currentTimeMillis()))
     }
 
+    /**
+     * Отмечает просмотр. [rating] 1..10 (0 — без оценки) заодно ставит лайк или дизлайк
+     * (7+ — лайк, 1–4 — дизлайк). Просмотренное уходит из «Хочу посмотреть».
+     */
+    suspend fun markWatched(title: Title, rating: Int, date: LocalDate) {
+        val base = dao.get(title.type.path, title.id) ?: UserTitleEntity.from(title)
+        val reaction = if (rating > 0) RatingScale.reactionFor(rating).value else base.reaction
+        save(
+            base.copy(
+                watched = true,
+                userRating = rating.coerceIn(0, 10),
+                watchedAt = date.toString(),
+                reaction = reaction,
+                inWatchlist = false,
+                fromOnboarding = false,
+                updatedAt = System.currentTimeMillis(),
+            )
+        )
+    }
+
+    /** Убирает отметку о просмотре вместе с оценкой; лайк или дизлайк остаются. */
+    suspend fun clearWatched(title: Title) {
+        val base = dao.get(title.type.path, title.id) ?: return
+        save(base.copy(watched = false, userRating = 0, watchedAt = null, updatedAt = System.currentTimeMillis()))
+    }
+
     private suspend fun save(entity: UserTitleEntity) {
-        if (entity.reaction == 0 && !entity.inWatchlist) {
+        if (entity.isBlank) {
             dao.delete(entity.type, entity.id)
             return
         }
@@ -194,7 +221,7 @@ class TitleRepository(
     /** Сохраняет результат онбординга, заменяя прошлые стартовые лайки. */
     suspend fun applyOnboarding(genres: Set<Int>, likes: List<Title>) {
         dao.getAll().filter { it.fromOnboarding }.forEach {
-            if (it.inWatchlist) dao.upsert(it.copy(reaction = 0, fromOnboarding = false))
+            if (it.inWatchlist || it.watched) dao.upsert(it.copy(reaction = 0, fromOnboarding = false))
             else dao.delete(it.type, it.id)
         }
         likes.forEach { title ->
@@ -235,6 +262,7 @@ class TitleRepository(
                 posterPath = entity.posterPath ?: details.title.posterPath,
                 releaseNotifyStage = stage,
                 lastKnownSeason = maxOf(entity.lastKnownSeason, airedSeason(details.lastEpisode, today)),
+                lastKnownEpisode = maxOf(entity.lastKnownEpisode, airedEpisodeCode(details.lastEpisode, today)),
             )
         )
     }
@@ -242,8 +270,12 @@ class TitleRepository(
     private fun airedSeason(episode: Episode?, today: LocalDate): Int =
         if (episode != null && episode.date?.isAfter(today) != true) episode.season else 0
 
+    private fun airedEpisodeCode(episode: Episode?, today: LocalDate): Int =
+        if (episode != null && episode.date?.isAfter(today) != true) episode.code else 0
+
     private fun UserTitleEntity?.toMark() =
-        if (this == null) UserMark() else UserMark(reactionValue, inWatchlist)
+        if (this == null) UserMark()
+        else UserMark(reactionValue, inWatchlist, watched, userRating, parseDate(watchedAt))
 }
 
 // ---------- Маппинг DTO → домен ----------

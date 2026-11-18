@@ -39,9 +39,21 @@ data class UserTitleEntity(
     val releaseNotifyStage: Int = 0,
     /** Последний вышедший сезон сериала, о котором пользователь уже знает. */
     val lastKnownSeason: Int = 0,
+    // Дневник просмотров (с версии 0.6)
+    /** Пользователь отметил, что посмотрел. */
+    val watched: Boolean = false,
+    /** Оценка пользователя 1..10, 0 — без оценки. Для вкуса важнее лайка. */
+    val userRating: Int = 0,
+    /** Дата просмотра, ISO (yyyy-MM-dd). */
+    val watchedAt: String? = null,
+    /** Последняя вышедшая серия, о которой пользователь знает: сезон * 1000 + номер серии. */
+    val lastKnownEpisode: Int = 0,
 ) {
     val mediaType: MediaType get() = MediaType.fromPath(type) ?: MediaType.MOVIE
     val reactionValue: Reaction get() = Reaction.of(reaction)
+
+    /** Пустая запись — ни оценки, ни списка, ни просмотра: её можно удалить. */
+    val isBlank: Boolean get() = reaction == 0 && !inWatchlist && !watched
 
     fun toTitle() = Title(
         id = id,

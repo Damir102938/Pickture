@@ -51,13 +51,23 @@ class TasteProfile(
 
         fun build(entities: List<UserTitleEntity>, settings: Settings): TasteProfile {
             val counted = entities.filter { settings.useOnboarding || !it.fromOnboarding }
-            val liked = counted.filter { it.reaction > 0 }.sortedByDescending { it.updatedAt }
-            val disliked = counted.filter { it.reaction < 0 }.sortedByDescending { it.updatedAt }
+            // Вес каждого тайтла: оценка 1..10 важнее лайка; 9–10 — сильный плюс, 1–4 — минус
+            val weighted = counted.map { it to it.tasteWeight() }
+            val liked = weighted.filter { it.second > 0 }
+                .sortedWith(compareByDescending<Pair<UserTitleEntity, Double>> { it.second }.thenByDescending { it.first.updatedAt })
+                .map { it.first }
+            val disliked = weighted.filter { it.second < 0 }
+                .sortedWith(compareBy<Pair<UserTitleEntity, Double>> { it.second }.thenByDescending { it.first.updatedAt })
+                .map { it.first }
 
             val pos = HashMap<Int, Double>()
             val neg = HashMap<Int, Double>()
-            liked.forEach { e -> e.normalizedGenres().forEach { pos.merge(it, 1.0, Double::plus) } }
-            disliked.forEach { e -> e.normalizedGenres().forEach { neg.merge(it, 1.0, Double::plus) } }
+            weighted.forEach { (e, w) ->
+                when {
+                    w > 0 -> e.normalizedGenres().forEach { pos.merge(it, w, Double::plus) }
+                    w < 0 -> e.normalizedGenres().forEach { neg.merge(it, -w, Double::plus) }
+                }
+            }
             if (settings.useOnboarding) {
                 settings.favoriteGenres.forEach { pos.merge(it, 2.0, Double::plus) }
             }
@@ -72,13 +82,11 @@ class TasteProfile(
 
             val keywords = HashMap<Int, Double>()
             val people = HashMap<Int, Double>()
-            fun accumulate(e: UserTitleEntity, sign: Double) {
-                e.keywordIds.toIntList().forEach { keywords.merge(it, sign, Double::plus) }
-                e.castIds.toIntList().forEach { people.merge(it, sign, Double::plus) }
-                e.directorIds.toIntList().forEach { people.merge(it, 1.5 * sign, Double::plus) }
+            weighted.filter { it.second != 0.0 }.forEach { (e, w) ->
+                e.keywordIds.toIntList().forEach { keywords.merge(it, w, Double::plus) }
+                e.castIds.toIntList().forEach { people.merge(it, w, Double::plus) }
+                e.directorIds.toIntList().forEach { people.merge(it, 1.5 * w, Double::plus) }
             }
-            liked.forEach { accumulate(it, 1.0) }
-            disliked.forEach { accumulate(it, -1.0) }
 
             return TasteProfile(
                 genreWeights = genreWeights,
@@ -87,13 +95,24 @@ class TasteProfile(
                 peopleWeights = people.filterValues { it >= 2 },
                 liked = liked,
                 disliked = disliked,
-                excluded = entities.filter { it.reaction != 0 || it.inWatchlist }
+                // Уже оценённое, просмотренное и отложенное не рекомендуем
+                excluded = entities.filter { it.reaction != 0 || it.inWatchlist || it.watched }
                     .map { TitleKey(it.mediaType, it.id) }.toSet(),
-                dislikedKeys = entities.filter { it.reaction < 0 }.map { TitleKey(it.mediaType, it.id) }.toSet(),
+                dislikedKeys = entities.filter { it.tasteWeight() < 0 }.map { TitleKey(it.mediaType, it.id) }.toSet(),
             )
         }
 
         private fun UserTitleEntity.normalizedGenres(): List<Int> =
             Genres.normalize(mediaType, genreIds.toIntList())
     }
+}
+
+/**
+ * Вес тайтла для профиля вкуса: оценка 1..10 по [RatingScale], без оценки — лайк (+1) или дизлайк (−1).
+ */
+fun UserTitleEntity.tasteWeight(): Double = when {
+    userRating > 0 -> RatingScale.weight(userRating)
+    reaction > 0 -> 1.0
+    reaction < 0 -> -1.0
+    else -> 0.0
 }

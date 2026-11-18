@@ -50,6 +50,20 @@ import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.ThumbDown
 import androidx.compose.material.icons.outlined.ThumbDown
+import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.outlined.Visibility
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableLongStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
+import com.moviepicker.ui.design.DateField
+import com.moviepicker.ui.design.RatingPicker
+import com.moviepicker.ui.design.TextAction
+import com.moviepicker.ui.design.TicketDatePicker
+import com.moviepicker.ui.design.TicketDialog
+import com.moviepicker.ui.design.ratingColor
 import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -132,6 +146,16 @@ class DetailsViewModel(private val container: AppContainer, private val key: Tit
         val t = title ?: return
         viewModelScope.launch { container.repository.toggleWatchlist(t) }
     }
+
+    fun markWatched(rating: Int, date: LocalDate) {
+        val t = title ?: return
+        viewModelScope.launch { container.repository.markWatched(t, rating, date) }
+    }
+
+    fun clearWatched() {
+        val t = title ?: return
+        viewModelScope.launch { container.repository.clearWatched(t) }
+    }
 }
 
 @Composable
@@ -146,6 +170,7 @@ fun DetailsScreen(
     val mark by vm.mark.collectAsStateWithLifecycle()
     val profile by vm.profile.collectAsStateWithLifecycle()
     val marks by vm.marks.collectAsStateWithLifecycle()
+    var watchedDialog by rememberSaveable { mutableStateOf(false) }
 
     Box(Modifier.fillMaxSize()) {
         when (val s = state) {
@@ -159,11 +184,64 @@ fun DetailsScreen(
                 marks = marks,
                 onReact = vm::react,
                 onWatchlist = vm::toggleWatchlist,
+                onWatched = { watchedDialog = true },
                 onOpen = onOpen,
                 onTrailer = onTrailer,
             )
         }
         BackButton(onBack, Modifier.statusBarsPadding().padding(10.dp), onImage = true)
+    }
+    if (watchedDialog) {
+        WatchedDialog(
+            mark = mark,
+            isSeries = key.type == MediaType.TV,
+            onSave = { rating, date -> vm.markWatched(rating, date); watchedDialog = false },
+            onClear = { vm.clearWatched(); watchedDialog = false },
+            onDismiss = { watchedDialog = false },
+        )
+    }
+}
+
+/** «Посмотрел»: оценка 1–10 и дата просмотра. */
+@Composable
+private fun WatchedDialog(
+    mark: UserMark,
+    isSeries: Boolean,
+    onSave: (Int, LocalDate) -> Unit,
+    onClear: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    var rating by rememberSaveable { mutableIntStateOf(mark.rating) }
+    var dateDay by rememberSaveable { mutableLongStateOf((mark.watchedAt ?: LocalDate.now()).toEpochDay()) }
+    var pickDate by remember { mutableStateOf(false) }
+    val date = LocalDate.ofEpochDay(dateDay)
+    TicketDialog(
+        title = if (mark.watched) "Ваша оценка" else if (isSeries) "Посмотрел сериал" else "Посмотрел фильм",
+        onDismiss = onDismiss,
+        confirm = { MarqueeButton("Сохранить", { onSave(rating, date) }) },
+        dismiss = {
+            if (mark.watched) TextAction("Убрать", onClear, color = Brand.TextMuted)
+            else TextAction("Отмена", onDismiss, color = Brand.TextMuted)
+        },
+    ) {
+        Column {
+            RatingPicker(rating, onSelect = { rating = it })
+            Spacer(Modifier.height(16.dp))
+            DateField(
+                "Дата просмотра",
+                if (date == LocalDate.now()) "Сегодня" else date.formatFull(),
+                onClick = { pickDate = true },
+                modifier = Modifier.fillMaxWidth(),
+            )
+            Spacer(Modifier.height(10.dp))
+            Text(
+                "Оценка 9–10 сильнее всего влияет на рекомендации, 1–4 — отталкивает от похожего.",
+                style = MaterialTheme.typography.bodySmall, color = Brand.TextMuted,
+            )
+        }
+    }
+    if (pickDate) {
+        TicketDatePicker(date, onPick = { dateDay = it.toEpochDay() }, onDismiss = { pickDate = false })
     }
 }
 
@@ -177,6 +255,7 @@ private fun DetailsContent(
     marks: Map<TitleKey, UserMark>,
     onReact: (Reaction) -> Unit,
     onWatchlist: () -> Unit,
+    onWatched: () -> Unit,
     onOpen: (Title) -> Unit,
     onTrailer: (videoKey: String) -> Unit,
 ) {
@@ -262,6 +341,14 @@ private fun DetailsContent(
                         selected = mark.inWatchlist,
                         color = Brand.Gold,
                         onClick = onWatchlist,
+                        modifier = Modifier.weight(1f),
+                    )
+                    StampButton(
+                        icon = if (mark.watched) Icons.Filled.Visibility else Icons.Outlined.Visibility,
+                        label = if (mark.watched && mark.rating > 0) "Оценка ${mark.rating}" else "Смотрел",
+                        selected = mark.watched,
+                        color = if (mark.rating > 0) ratingColor(mark.rating) else Brand.MatchHigh,
+                        onClick = onWatched,
                         modifier = Modifier.weight(1f),
                     )
                 }

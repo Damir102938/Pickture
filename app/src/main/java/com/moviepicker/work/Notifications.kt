@@ -27,7 +27,7 @@ object Notifications {
         val manager = context.getSystemService(NotificationManager::class.java)
         manager.createNotificationChannel(
             NotificationChannel(CHANNEL_WATCHLIST, "Выход из «Хочу посмотреть»", NotificationManager.IMPORTANCE_DEFAULT)
-                .apply { description = "Премьеры, цифровые релизы и новые сезоны из вашего списка" }
+                .apply { description = "Премьеры, цифровые релизы, новые сезоны и серии из ваших списков" }
         )
         manager.createNotificationChannel(
             NotificationChannel(CHANNEL_NEW, "Новинки для вас", NotificationManager.IMPORTANCE_LOW)

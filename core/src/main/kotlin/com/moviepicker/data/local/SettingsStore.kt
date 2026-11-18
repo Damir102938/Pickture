@@ -16,6 +16,8 @@ data class Settings(
     val useOnboarding: Boolean = true,
     val favoriteGenres: Set<Int> = emptySet(),
     val notificationsEnabled: Boolean = true,
+    /** Сообщать о каждой новой серии сериалов из «Хочу посмотреть» и просмотренных с хорошей оценкой. */
+    val notifyEpisodes: Boolean = true,
     val notificationPermissionAsked: Boolean = false,
     /** Ключ TMDB, введённый пользователем. */
     val tmdbApiKey: String = "",
@@ -29,6 +31,7 @@ class SettingsStore(private val dataStore: DataStore<Preferences>) {
         val useOnboarding = booleanPreferencesKey("use_onboarding")
         val favoriteGenres = stringSetPreferencesKey("favorite_genres")
         val notificationsEnabled = booleanPreferencesKey("notifications_enabled")
+        val notifyEpisodes = booleanPreferencesKey("notify_episodes")
         val permissionAsked = booleanPreferencesKey("notification_permission_asked")
         val notifiedNew = stringPreferencesKey("notified_new_titles")
         val tmdbApiKey = stringPreferencesKey("tmdb_api_key")
@@ -43,6 +46,7 @@ class SettingsStore(private val dataStore: DataStore<Preferences>) {
         useOnboarding = this[Keys.useOnboarding] ?: true,
         favoriteGenres = this[Keys.favoriteGenres].orEmpty().mapNotNull { it.toIntOrNull() }.toSet(),
         notificationsEnabled = this[Keys.notificationsEnabled] ?: true,
+        notifyEpisodes = this[Keys.notifyEpisodes] ?: true,
         notificationPermissionAsked = this[Keys.permissionAsked] ?: false,
         tmdbApiKey = this[Keys.tmdbApiKey].orEmpty(),
     )
@@ -60,6 +64,8 @@ class SettingsStore(private val dataStore: DataStore<Preferences>) {
 
     suspend fun setNotificationsEnabled(value: Boolean) =
         dataStore.edit { it[Keys.notificationsEnabled] = value }
+
+    suspend fun setNotifyEpisodes(value: Boolean) = dataStore.edit { it[Keys.notifyEpisodes] = value }
 
     suspend fun setNotificationPermissionAsked() =
         dataStore.edit { it[Keys.permissionAsked] = true }

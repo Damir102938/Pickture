@@ -58,6 +58,8 @@ import com.moviepicker.ui.design.Brand
 import com.moviepicker.ui.design.MarqueeButton
 import com.moviepicker.ui.design.MarqueeLoader
 import com.moviepicker.ui.design.Perforation
+import com.moviepicker.ui.design.RatingBadge
+import androidx.compose.material.icons.filled.Visibility
 import com.moviepicker.ui.design.PkType
 import com.moviepicker.ui.design.TicketShape
 import com.moviepicker.ui.design.pressClickable
@@ -92,8 +94,13 @@ fun matchColor(match: Int): Color = Brand.match(match)
 /** Отметка пользователя на постере — маленький штамп в углу. */
 @Composable
 fun MarkIcon(mark: UserMark?, modifier: Modifier = Modifier) {
+    if (mark != null && mark.rating > 0) {
+        RatingBadge(mark.rating, modifier)
+        return
+    }
     val (icon, tint) = when {
         mark == null -> return
+        mark.watched -> Icons.Filled.Visibility to Brand.MatchHigh
         mark.reaction == Reaction.LIKE -> Icons.Filled.Favorite to Brand.Accent
         mark.reaction == Reaction.DISLIKE -> Icons.Filled.ThumbDown to Brand.MatchLow
         mark.inWatchlist -> Icons.Filled.Bookmark to Brand.Gold

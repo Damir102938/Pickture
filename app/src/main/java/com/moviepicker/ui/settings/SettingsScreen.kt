@@ -93,8 +93,8 @@ fun SettingsScreen(onBack: () -> Unit, onEditOnboarding: () -> Unit, onEditApiKe
             Header(2, "Уведомления")
             SwitchRow(
                 title = "Присылать уведомления",
-                description = "Когда выходит фильм или новый сезон из «Хочу посмотреть», " +
-                    "а также о свежих релизах, похожих на ваши любимые",
+                description = "Когда фильм из «Хочу посмотреть» выходит онлайн или в кино, у сериала выходит " +
+                    "новый сезон, а также о свежих релизах, похожих на ваши любимые",
                 checked = settings.notificationsEnabled,
                 onChange = { enabled ->
                     scope.launch { container.settings.setNotificationsEnabled(enabled) }
@@ -104,6 +104,12 @@ fun SettingsScreen(onBack: () -> Unit, onEditOnboarding: () -> Unit, onEditApiKe
                 },
             )
             if (settings.notificationsEnabled) {
+                SwitchRow(
+                    title = "Каждая новая серия",
+                    description = "Для сериалов из «Хочу посмотреть» и просмотренных, которым вы поставили 7+ или лайк",
+                    checked = settings.notifyEpisodes,
+                    onChange = { scope.launch { container.settings.setNotifyEpisodes(it) } },
+                )
                 Spacer(Modifier.height(4.dp))
                 TicketOutlineButton(
                     "Проверить сейчас",

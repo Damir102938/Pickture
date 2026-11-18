@@ -3,6 +3,7 @@ package com.moviepicker.ui.library
 import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.ThumbDown
+import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.ui.graphics.vector.ImageVector
 import com.moviepicker.ui.design.SectionHeader
 import androidx.compose.animation.AnimatedContent
@@ -54,6 +55,7 @@ private enum class LibraryTab(
     val filter: (UserTitleEntity) -> Boolean,
 ) {
     WATCHLIST("Хочу посмотреть", Icons.Filled.Bookmark, "Добавляйте сюда фильмы, и мы сообщим, когда они выйдут", { it.inWatchlist }),
+    DIARY("Дневник", Icons.Filled.Visibility, "Отмечайте «Смотрел» в карточке фильма и ставьте оценку от 1 до 10 — так рекомендации станут точнее", { it.watched }),
     LIKED("Нравится", Icons.Filled.Favorite, "Ставьте лайки — так рекомендации станут точнее", { it.reaction > 0 }),
     DISLIKED("Не моё", Icons.Filled.ThumbDown, "Здесь будет то, что вам не понравилось", { it.reaction < 0 }),
 }
@@ -96,7 +98,9 @@ fun LibraryScreen(onOpen: (Title) -> Unit, onSettings: () -> Unit) {
         ) { index ->
             val tab = LibraryTab.entries[index]
             val shown = remember(entities, index) { entities.filter(tab.filter).map { it.toTitle() } }
-            if (shown.isEmpty()) {
+            if (tab == LibraryTab.DIARY && shown.isNotEmpty()) {
+                DiaryList(entities.filter(tab.filter), onOpen)
+            } else if (shown.isEmpty()) {
                 Column {
                     SectionHeader(tab.label, Modifier.padding(top = 12.dp))
                     MessageBox("Пока пусто", tab.empty)
