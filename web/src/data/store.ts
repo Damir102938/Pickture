@@ -6,6 +6,7 @@ import {
   type UserTitleEntity,
   entityFromTitle,
   entityKey,
+  isBlank,
   sanitizeEntity,
 } from '../core/entities'
 import {
@@ -13,6 +14,7 @@ import {
   type TitleKey,
   type UserMark,
   REACTION,
+  RatingScale,
   formatIso,
   mediaTypeFromPath,
   titleKey,
@@ -103,7 +105,17 @@ export const completeOnboarding = (genres: number[]) =>
 
 export function markOf(key: TitleKey): UserMark | undefined {
   const e = state.titles.get(key)
-  return e ? { reaction: e.reaction, inWatchlist: e.inWatchlist } : undefined
+  return e ? markFrom(e) : undefined
+}
+
+export function markFrom(e: UserTitleEntity): UserMark {
+  return {
+    reaction: e.reaction,
+    inWatchlist: e.inWatchlist,
+    watched: e.watched,
+    rating: e.userRating,
+    watchedAt: e.watchedAt,
+  }
 }
 
 function commit(titles: Map<TitleKey, UserTitleEntity>) {
@@ -114,7 +126,7 @@ function commit(titles: Map<TitleKey, UserTitleEntity>) {
 function save(entity: UserTitleEntity) {
   const titles = new Map(state.titles)
   const key = entityKey(entity)
-  if (entity.reaction === 0 && !entity.inWatchlist) {
+  if (isBlank(entity)) {
     titles.delete(key)
     return commit(titles)
   }
@@ -134,12 +146,38 @@ export function toggleWatchlist(title: Title) {
   return save({ ...base, inWatchlist: !base.inWatchlist, updatedAt: Date.now() })
 }
 
+/**
+ * Отмечает просмотр. [rating] 1..10 (0 — без оценки) заодно ставит лайк или дизлайк
+ * (7+ — лайк, 1–4 — дизлайк). Просмотренное уходит из «Хочу посмотреть».
+ */
+export function markWatched(title: Title, rating: number, date: string) {
+  const base = state.titles.get(titleKey(title)) ?? entityFromTitle(title)
+  const userRating = Math.min(10, Math.max(0, Math.trunc(rating)))
+  return save({
+    ...base,
+    watched: true,
+    userRating,
+    watchedAt: date,
+    reaction: userRating > 0 ? RatingScale.reactionFor(userRating) : base.reaction,
+    inWatchlist: false,
+    fromOnboarding: false,
+    updatedAt: Date.now(),
+  })
+}
+
+/** Убирает отметку о просмотре вместе с оценкой; лайк или дизлайк остаются. */
+export function clearWatched(title: Title) {
+  const base = state.titles.get(titleKey(title))
+  if (!base) return Promise.resolve()
+  return save({ ...base, watched: false, userRating: 0, watchedAt: null, updatedAt: Date.now() })
+}
+
 /** Сохраняет результат онбординга, заменяя прошлые стартовые лайки. */
 export async function applyOnboarding(genres: number[], likes: Title[]) {
   const titles = new Map(state.titles)
   for (const [key, e] of titles) {
     if (!e.fromOnboarding) continue
-    if (e.inWatchlist) titles.set(key, { ...e, reaction: 0, fromOnboarding: false })
+    if (e.inWatchlist || e.watched) titles.set(key, { ...e, reaction: 0, fromOnboarding: false })
     else titles.delete(key)
   }
   const toLoad: UserTitleEntity[] = []
@@ -175,7 +213,10 @@ export async function loadFeatures(type: string, id: number) {
     else stage = 0
   }
   const last = details.lastEpisode
-  const airedSeason = last && !(last.date && last.date > now) ? last.season : 0
+  const aired = !!last && !(last.date && last.date > now)
+  const airedSeason = aired ? last.season : 0
+  // Код серии: сезон * 1000 + номер — нужен Android-версии для уведомлений о новых сериях
+  const airedEpisode = aired ? last.season * 1000 + last.number : 0
   const genreIds = details.title.genreIds.join(',')
   const titles = new Map(state.titles)
   titles.set(entityKey(entity), {
@@ -188,6 +229,7 @@ export async function loadFeatures(type: string, id: number) {
     posterPath: entity.posterPath ?? details.title.posterPath,
     releaseNotifyStage: stage,
     lastKnownSeason: Math.max(entity.lastKnownSeason, airedSeason),
+    lastKnownEpisode: Math.max(entity.lastKnownEpisode, airedEpisode),
   })
   await commit(titles)
 }
@@ -203,7 +245,7 @@ const RECS_TTL_MS = 6 * 60 * 60 * 1000
 
 function recsKey(): string {
   const entities = [...state.titles.values()]
-    .map((e) => `${e.type}:${e.id}:${e.reaction}:${e.inWatchlist ? 1 : 0}`)
+    .map((e) => `${e.type}:${e.id}:${e.reaction}:${e.inWatchlist ? 1 : 0}:${e.watched ? 1 : 0}:${e.userRating}`)
     .sort()
   const s = state.settings
   return JSON.stringify([entities, s.useOnboarding, [...s.favoriteGenres].sort((a, b) => a - b)])
@@ -211,7 +253,7 @@ function recsKey(): string {
 
 /** Догружает признаки для оценённых тайтлов, если раньше не получилось (например, не было сети). */
 async function ensureFeatures() {
-  const pending = [...state.titles.values()].filter((e) => !e.featuresLoaded && e.reaction !== 0).slice(0, 10)
+  const pending = [...state.titles.values()].filter((e) => !e.featuresLoaded && (e.reaction !== 0 || e.userRating > 0)).slice(0, 10)
   await Promise.allSettled(pending.map((e) => loadFeatures(e.type, e.id)))
 }
 

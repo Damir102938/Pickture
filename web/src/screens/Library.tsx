@@ -5,6 +5,7 @@ import { MessageBox, ScreenHeader, SectionHeader, TicketToggle, TitleGrid } from
 import { Icon, type IconName } from '../ui/icons'
 import { useDesktop } from '../ui/layout'
 import { push } from '../ui/nav'
+import { DiaryList } from './Diary'
 import { useScrollToTop } from './shared'
 
 const LIBRARY_TABS: { label: string; icon: IconName; empty: string; filter: (e: UserTitleEntity) => boolean }[] = [
@@ -13,6 +14,12 @@ const LIBRARY_TABS: { label: string; icon: IconName; empty: string; filter: (e: 
     icon: 'bookmark',
     empty: 'Добавляйте сюда фильмы, которые хотите посмотреть',
     filter: (e) => e.inWatchlist,
+  },
+  {
+    label: 'Дневник',
+    icon: 'eye',
+    empty: 'Отмечайте «Смотрел» в карточке фильма и ставьте оценку от 1 до 10 — так рекомендации станут точнее',
+    filter: (e) => e.watched,
   },
   {
     label: 'Нравится',
@@ -65,7 +72,14 @@ export function LibraryScreen() {
         style={{ margin: '10px 16px 0' }}
       />
       <div key={tab} class={tab === prev ? '' : tab > prev ? 'slide-right' : 'slide-left'}>
-        {shown.length === 0 ? (
+        {current.label === 'Дневник' && shown.length > 0 ? (
+          <>
+            <div style={{ paddingTop: '12px' }}>
+              <SectionHeader title={current.label} />
+            </div>
+            <DiaryList watched={entities.filter(current.filter)} />
+          </>
+        ) : shown.length === 0 ? (
           <div style={{ paddingTop: '12px' }}>
             <SectionHeader title={current.label} />
             <MessageBox title="Пока пусто" text={current.empty} />

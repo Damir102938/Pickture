@@ -2,7 +2,7 @@ import { genreName, genresToTv } from './genres'
 import { entityMediaType as entityTypeOf } from './entities'
 import { MEDIA_TYPES, type Title, type TitleKey, daysBetween, minusYears, titleKey, today } from './models'
 import type { FeedSection, TitleRepository } from './repository'
-import type { TasteProfile } from './taste'
+import { type TasteProfile, tasteWeight } from './taste'
 
 export interface Recommendation {
   title: Title
@@ -59,7 +59,8 @@ export async function computeRecommendations(
   const source = (fetch: () => Promise<Title[]>, apply: (t: Title) => void) => sources.push([fetch, apply])
 
   profile.liked.slice(0, 10).forEach((liked, index) => {
-    const weight = 1.0 - index * 0.05
+    // Чем выше оценка, тем сильнее голос: «10» тянет больше, чем просто лайк
+    const weight = (1.0 - index * 0.05) * tasteWeight(liked)
     source(
       () => repository.tmdbRecommendations(entityTypeOf(liked), liked.id),
       (t) => candidate(t).add(weight, `Похоже на «${liked.name}»`),
@@ -69,7 +70,7 @@ export async function computeRecommendations(
     source(
       () => repository.tmdbRecommendations(entityTypeOf(disliked), disliked.id),
       (t) => {
-        candidate(t).negative += 1.0
+        candidate(t).negative += -tasteWeight(disliked)
       },
     )
   })

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'preact/hooks'
 import {
   type MediaType,
   type TitleDetails,
+  type UserMark,
   Images,
   REACTION,
   formatFull,
@@ -13,7 +14,8 @@ import {
   yearOf,
 } from '../core/models'
 import { userMessage } from '../core/tmdb'
-import { markOf, repository, setReaction, toggleWatchlist, useApp } from '../data/store'
+import { clearWatched, markFrom, markOf, markWatched, repository, setReaction, toggleWatchlist, useApp } from '../data/store'
+import { WatchedDialog, ratingColor } from '../ui/rating'
 import {
   BackButton,
   ErrorBox,
@@ -43,9 +45,9 @@ export function DetailsScreen({ type, id }: { type: MediaType; id: number }) {
     return cached ? { state: 'ok', data: cached } : { state: 'loading' }
   })
   const profile = useApp((s) => s.profile)
-  const mark = useApp((s) => {
+  const mark = useApp((s): UserMark => {
     const e = s.titles.get(key)
-    return { reaction: e?.reaction ?? 0, inWatchlist: e?.inWatchlist ?? false }
+    return e ? markFrom(e) : { reaction: 0, inWatchlist: false, watched: false, rating: 0, watchedAt: null }
   })
 
   async function fetchDetails() {
@@ -81,13 +83,14 @@ export function DetailsScreen({ type, id }: { type: MediaType; id: number }) {
   )
 }
 
-function DetailsContent(props: { details: TitleDetails; mark: { reaction: number; inWatchlist: boolean }; match: number | null }) {
+function DetailsContent(props: { details: TitleDetails; mark: UserMark; match: number | null }) {
   const { details, mark, match } = props
   const t = details.title
   const profile = useApp((s) => s.profile)
   // На ПК картинки крупнее
   const desktop = useDesktop()
   const toggleReaction = (r: number) => setReaction(t, mark.reaction === r ? REACTION.NONE : r)
+  const [watchedDialog, setWatchedDialog] = useState(false)
   const trailer = details.videos[0]
   const more = details.videos.length - 1
   const tagline = details.tagline?.trim().replace(/^[«»"“”„]+|[«»"“”„]+$/g, '').trim()
@@ -149,7 +152,29 @@ function DetailsContent(props: { details: TitleDetails; mark: { reaction: number
             color="var(--gold)"
             onClick={() => toggleWatchlist(t)}
           />
+          <StampButton
+            icon={mark.watched ? 'eye' : 'eyeOutline'}
+            label={mark.watched && mark.rating > 0 ? `Оценка ${mark.rating}` : 'Смотрел'}
+            selected={mark.watched}
+            color={mark.rating > 0 ? ratingColor(mark.rating) : 'var(--match-high)'}
+            onClick={() => setWatchedDialog(true)}
+          />
         </div>
+        {watchedDialog && (
+          <WatchedDialog
+            mark={mark}
+            isSeries={t.type === 'tv'}
+            onSave={(rating, date) => {
+              setWatchedDialog(false)
+              markWatched(t, rating, date)
+            }}
+            onClear={() => {
+              setWatchedDialog(false)
+              clearWatched(t)
+            }}
+            onDismiss={() => setWatchedDialog(false)}
+          />
+        )}
         {trailer && (
           <div style={{ marginTop: '12px' }}>
             <MarqueeButton

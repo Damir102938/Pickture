@@ -41,6 +41,55 @@ export const REACTION = { NONE: 0, LIKE: 1, DISLIKE: -1 } as const
 export interface UserMark {
   reaction: number
   inWatchlist: boolean
+  watched: boolean
+  /** Оценка 1..10, 0 — без оценки. */
+  rating: number
+  /** Дата просмотра, YYYY-MM-DD. */
+  watchedAt: string | null
+}
+
+/**
+ * Насколько оценка влияет на вкус: 9–10 — сильный плюс, 7–8 — плюс, 5–6 — нейтрально, 1–4 — минус.
+ * Лайк без оценки весит как «9», дизлайк — как «2». Повторяет RatingScale из core/.../domain/Models.kt.
+ */
+export const RatingScale = {
+  weight(rating: number): number {
+    switch (rating) {
+      case 10:
+        return 1.25
+      case 9:
+        return 1.0
+      case 8:
+        return 0.65
+      case 7:
+        return 0.35
+      case 4:
+        return -0.5
+      case 3:
+        return -0.75
+      case 2:
+        return -1.0
+      case 1:
+        return -1.25
+      default:
+        return 0
+    }
+  },
+
+  /** Лайк или дизлайк, который ставится вместе с оценкой. */
+  reactionFor(rating: number): number {
+    if (rating >= 7) return REACTION.LIKE
+    if (rating >= 1 && rating <= 4) return REACTION.DISLIKE
+    return REACTION.NONE
+  },
+
+  label(rating: number): string {
+    return (
+      ['Без оценки', 'Ужасно', 'Очень плохо', 'Плохо', 'Слабо', 'Средне', 'Неплохо', 'Хорошо', 'Очень хорошо', 'Отлично', 'Шедевр'][
+        rating
+      ] ?? 'Без оценки'
+    )
+  },
 }
 
 export interface CastMember {
