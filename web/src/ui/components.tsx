@@ -11,6 +11,7 @@ import {
   titleSubtitle,
 } from '../core/models'
 import { Icon, type IconName } from './icons'
+import { RatingBadge } from './rating'
 import { back } from './nav'
 
 export const matchColor = (p: number) => (p >= 75 ? 'var(--match-high)' : p >= 55 ? 'var(--match-mid)' : 'var(--match-low)')
@@ -325,9 +326,18 @@ export function Poster(props: {
 /** Отметка пользователя на постере — маленький штамп в углу. */
 export function MarkIcon({ mark }: { mark?: UserMark }) {
   if (!mark) return null
+  // Оценка важнее остальных отметок — вместо значка показывается само число
+  if (mark.rating > 0) {
+    return (
+      <div class="mark-rating">
+        <RatingBadge rating={mark.rating} />
+      </div>
+    )
+  }
   let icon: IconName
   let color: string
-  if (mark.reaction === REACTION.LIKE) [icon, color] = ['favorite', 'var(--accent)']
+  if (mark.watched) [icon, color] = ['eye', 'var(--match-high)']
+  else if (mark.reaction === REACTION.LIKE) [icon, color] = ['favorite', 'var(--accent)']
   else if (mark.reaction === REACTION.DISLIKE) [icon, color] = ['thumbDown', 'var(--match-low)']
   else if (mark.inWatchlist) [icon, color] = ['bookmark', 'var(--gold)']
   else return null

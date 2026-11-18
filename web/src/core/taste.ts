@@ -1,5 +1,6 @@
 import { type Settings, type UserTitleEntity, entityKey, entityMediaType, toIntList } from './entities'
 import { normalizeGenres } from './genres'
+import { RatingScale } from './models'
 import type { Title, TitleKey } from './models'
 
 /**
@@ -59,16 +60,25 @@ export class TasteProfile {
 
   static build(entities: UserTitleEntity[], settings: Settings): TasteProfile {
     const counted = entities.filter((e) => settings.useOnboarding || !e.fromOnboarding)
-    const byRecent = (a: UserTitleEntity, b: UserTitleEntity) => b.updatedAt - a.updatedAt
-    const liked = counted.filter((e) => e.reaction > 0).sort(byRecent)
-    const disliked = counted.filter((e) => e.reaction < 0).sort(byRecent)
+    // Вес каждого тайтла: оценка 1..10 важнее лайка; 9–10 — сильный плюс, 1–4 — минус
+    const weighted = counted.map((e) => [e, tasteWeight(e)] as const)
+    const liked = weighted
+      .filter(([, w]) => w > 0)
+      .sort((a, b) => b[1] - a[1] || b[0].updatedAt - a[0].updatedAt)
+      .map(([e]) => e)
+    const disliked = weighted
+      .filter(([, w]) => w < 0)
+      .sort((a, b) => a[1] - b[1] || b[0].updatedAt - a[0].updatedAt)
+      .map(([e]) => e)
 
     const pos = new Map<number, number>()
     const neg = new Map<number, number>()
     const merge = (m: Map<number, number>, k: number, v: number) => m.set(k, (m.get(k) ?? 0) + v)
     const genresOf = (e: UserTitleEntity) => normalizeGenres(entityMediaType(e), toIntList(e.genreIds))
-    liked.forEach((e) => genresOf(e).forEach((g) => merge(pos, g, 1)))
-    disliked.forEach((e) => genresOf(e).forEach((g) => merge(neg, g, 1)))
+    for (const [e, w] of weighted) {
+      if (w > 0) genresOf(e).forEach((g) => merge(pos, g, w))
+      else if (w < 0) genresOf(e).forEach((g) => merge(neg, g, -w))
+    }
     if (settings.useOnboarding) settings.favoriteGenres.forEach((g) => merge(pos, g, 2))
 
     const maxPos = Math.max(pos.size ? Math.max(...pos.values()) : 0, 1)
@@ -82,13 +92,12 @@ export class TasteProfile {
 
     const keywords = new Map<number, number>()
     const people = new Map<number, number>()
-    const accumulate = (e: UserTitleEntity, sign: number) => {
-      toIntList(e.keywordIds).forEach((k) => merge(keywords, k, sign))
-      toIntList(e.castIds).forEach((p) => merge(people, p, sign))
-      toIntList(e.directorIds).forEach((p) => merge(people, p, 1.5 * sign))
+    for (const [e, w] of weighted) {
+      if (w === 0) continue
+      toIntList(e.keywordIds).forEach((k) => merge(keywords, k, w))
+      toIntList(e.castIds).forEach((p) => merge(people, p, w))
+      toIntList(e.directorIds).forEach((p) => merge(people, p, 1.5 * w))
     }
-    liked.forEach((e) => accumulate(e, 1))
-    disliked.forEach((e) => accumulate(e, -1))
 
     // Ключевое слово или человек из одного фильма — ещё не закономерность
     const atLeastTwo = (m: Map<number, number>) => new Map([...m].filter(([, v]) => v >= 2))
@@ -99,10 +108,19 @@ export class TasteProfile {
       atLeastTwo(people),
       liked,
       disliked,
-      new Set(entities.filter((e) => e.reaction !== 0 || e.inWatchlist).map(entityKey)),
-      new Set(entities.filter((e) => e.reaction < 0).map(entityKey)),
+      // Уже оценённое, просмотренное и отложенное не рекомендуем
+      new Set(entities.filter((e) => e.reaction !== 0 || e.inWatchlist || e.watched).map(entityKey)),
+      new Set(entities.filter((e) => tasteWeight(e) < 0).map(entityKey)),
     )
   }
+}
+
+/** Вес тайтла для профиля вкуса: оценка 1..10 по шкале, без оценки — лайк (+1) или дизлайк (−1). */
+export function tasteWeight(e: UserTitleEntity): number {
+  if (e.userRating > 0) return RatingScale.weight(e.userRating)
+  if (e.reaction > 0) return 1
+  if (e.reaction < 0) return -1
+  return 0
 }
 
 export function clamp(v: number, min: number, max: number) {

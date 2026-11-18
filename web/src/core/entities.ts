@@ -27,6 +27,15 @@ export interface UserTitleEntity {
   /** Для уведомлений Android: 0 — не было, 1 — сообщили о премьере, 2 — о цифровом релизе. */
   releaseNotifyStage: number
   lastKnownSeason: number
+  // Дневник просмотров (с версии 0.6, как в Android)
+  /** Пользователь отметил, что посмотрел. */
+  watched: boolean
+  /** Оценка пользователя 1..10, 0 — без оценки. Для вкуса важнее лайка. */
+  userRating: number
+  /** Дата просмотра, ISO (yyyy-MM-dd). */
+  watchedAt: string | null
+  /** Последняя вышедшая серия, о которой пользователь знает: сезон * 1000 + номер серии. */
+  lastKnownEpisode: number
 }
 
 export interface Settings {
@@ -78,8 +87,15 @@ export function entityFromTitle(t: Title): UserTitleEntity {
     directorIds: '',
     releaseNotifyStage: 0,
     lastKnownSeason: 0,
+    watched: false,
+    userRating: 0,
+    watchedAt: null,
+    lastKnownEpisode: 0,
   }
 }
+
+/** Пустая запись — ни оценки, ни списка, ни просмотра: её можно удалить. */
+export const isBlank = (e: UserTitleEntity) => e.reaction === 0 && !e.inWatchlist && !e.watched
 
 export function entityToTitle(e: UserTitleEntity): Title {
   return {
@@ -132,5 +148,10 @@ export function sanitizeEntity(raw: unknown): UserTitleEntity | null {
     directorIds: ids(r.directorIds),
     releaseNotifyStage: Math.trunc(num(r.releaseNotifyStage)),
     lastKnownSeason: Math.trunc(num(r.lastKnownSeason)),
+    // Старые копии без этих полей читаются со значениями по умолчанию
+    watched: bool(r.watched),
+    userRating: Math.min(10, Math.max(0, Math.trunc(num(r.userRating)))),
+    watchedAt: parseDate(str(r.watchedAt)),
+    lastKnownEpisode: Math.trunc(num(r.lastKnownEpisode)),
   }
 }
